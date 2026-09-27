@@ -8,6 +8,11 @@ const setLocalVariables = (req, res, next) => {
     // Make any query parameters available to all templates
     res.locals.query = req.query;
 
+    // Make the logged-in session user (if any) available to all templates.
+    // TEMPORARY: relies on req.session.user, set by our dev-login stub for now —
+    // once Feature Set 1 (#13) provides real login, this line needs no changes.
+    res.locals.user = req.session?.user || null;
+
     next();
 };
 

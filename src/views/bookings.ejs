@@ -22,6 +22,7 @@
                         <th scope="col">Passengers</th>
                         <th scope="col">Passenger Names</th>
                         <th scope="col">Booked On</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="bookings-list"></tbody>
@@ -40,6 +41,10 @@
         <td class="booking-passenger-count"></td>
         <td class="booking-passengers"></td>
         <td class="booking-created"></td>
+        <td class="booking-actions">
+            <button type="button" class="btn-edit">Edit</button>
+            <button type="button" class="btn-delete">Delete</button>
+        </td>
     </tr>
 </template>
 
@@ -54,6 +59,7 @@
         text-align: left;
         border-bottom: 1px solid rgba(128, 128, 128, 0.3);
     }
+    .booking-actions button { margin-right: 0.5rem; }
 </style>
 
 <script>
@@ -62,12 +68,43 @@
     const bookingRowTemplate = document.querySelector('#booking-row-template');
 
     const fetchBookings = async () => {
-        const response = await fetch('/api/bookings');
+        const response = await fetch('/api/bookings', { credentials: 'same-origin' });
 
+        if (response.status === 401) {
+            window.location.href = '/login';
+            return [];
+        }
         if (!response.ok) {
             throw new Error('Unable to load bookings.');
         }
+        return response.json();
+    };
 
+    const updateBookingRequest = async (id, updates) => {
+        const response = await fetch(`/api/bookings/${id}`, {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Unable to update booking.');
+        }
+        return response.json();
+    };
+
+    const deleteBookingRequest = async (id) => {
+        const response = await fetch(`/api/bookings/${id}`, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Unable to delete booking.');
+        }
         return response.json();
     };
 
@@ -90,6 +127,34 @@
             row.querySelector('.booking-created').textContent = new Date(booking.createdAt)
                 .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
+            row.querySelector('.btn-edit').addEventListener('click', async () => {
+                const newTicketClass = window.prompt('Ticket class (e.g. standard, premium):', booking.ticketClass);
+                if (newTicketClass === null) return;
+
+                const newDay = window.prompt('Travel day (e.g. monday):', booking.selectedDay);
+                if (newDay === null) return;
+
+                try {
+                    await updateBookingRequest(booking.id, { ticketClass: newTicketClass, selectedDay: newDay });
+                    statusMessage.textContent = 'Booking updated.';
+                    await loadBookings();
+                } catch (error) {
+                    statusMessage.textContent = error.message;
+                }
+            });
+
+            row.querySelector('.btn-delete').addEventListener('click', async () => {
+                if (!window.confirm(`Delete booking ${booking.id}? This cannot be undone.`)) return;
+
+                try {
+                    await deleteBookingRequest(booking.id);
+                    statusMessage.textContent = 'Booking deleted.';
+                    await loadBookings();
+                } catch (error) {
+                    statusMessage.textContent = error.message;
+                }
+            });
+
             fragment.append(row);
         });
 
@@ -101,11 +166,9 @@
 
         try {
             const bookings = await fetchBookings();
-
             renderBookings(bookings);
-
             statusMessage.textContent = bookings.length === 0
-                ? 'No bookings yet. New bookings appear here after someone completes the booking form.'
+                ? 'No bookings yet, or none match your account.'
                 : `Showing ${bookings.length} booking${bookings.length === 1 ? '' : 's'}.`;
         } catch (error) {
             bookingList.replaceChildren();

@@ -9,19 +9,18 @@ import {
   renderTripListPage,
   renderTripDetailsPage,
 } from "../controllers/trips.js";
+import { requirePageLogin } from "../middleware/auth.js";
 
 const router = Router();
 
-// Trips EJS pages
 router.get("/routes", renderTripListPage);
 router.get("/routes/:routeId", renderTripDetailsPage);
 
-// Booking pages
 router.get("/routes/booking/:scheduleId", bookingPage);
 router.post("/routes/book", processBookingRequest);
 router.get("/routes/bookings/:bookingId", bookingConfirmationPage);
 
-// Bookings admin page
-router.get("/bookings-admin", bookingsAdminPage);
+// Bookings admin page (protected — requires login)
+router.get("/bookings-admin", requirePageLogin(), bookingsAdminPage);
 
 export default router;
