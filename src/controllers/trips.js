@@ -76,14 +76,15 @@ export async function renderTripDetailsPage(req, res) {
 export async function updateTrip(req, res, next) {
   try {
     const { id } = req.params;
-    const { startStation, endStation, departureTime, arrivalTime, trainId } = req.body;
+    const { name, region, startStation, endStation, duration, distance } = req.body;
 
     const updatedTrip = await updateTripModel(id, {
+      name,
+      region,
       startStation,
       endStation,
-      departureTime,
-      arrivalTime,
-      trainId
+      duration,
+      distance: Number(distance)
     });
 
     if (!updatedTrip) {
@@ -95,7 +96,6 @@ export async function updateTrip(req, res, next) {
     next(error);
   }
 }
-
 export async function deleteTrip(req, res, next) {
   try {
     const { id } = req.params;

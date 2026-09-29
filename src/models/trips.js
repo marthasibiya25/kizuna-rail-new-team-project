@@ -9,13 +9,16 @@ export async function getAllTrips() {
 }
 
 export const updateTripById = async (id, updateData) => {
-  return await Trip.findByIdAndUpdate(
-    id, 
-    updateData, 
-    { new: true, runValidators: true }
+  const query = mongoose.Types.ObjectId.isValid(id)
+    ? { $or: [{ _id: id }, { id }] }
+    : { id };
+
+  return await Trip.findOneAndUpdate(
+    query, 
+    { $set: updateData }, 
+    { returnDocument: 'after', runValidators: true } 
   ).lean();
 };
-
 export const deleteTripById = async (id) => {
   return await Trip.findByIdAndDelete(id).lean();
 };

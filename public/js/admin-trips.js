@@ -4,94 +4,117 @@ document.addEventListener('DOMContentLoaded', () => {
   const editForm = document.getElementById('edit-trip-form');
   const cancelBtn = document.getElementById('cancel-edit-btn');
 
+  let currentTrips = []; 
+
   async function loadTrips() {
     try {
       const response = await fetch('/api/trips');
       if (!response.ok) throw new Error('Failed to load trips');
       
-      const trips = await response.json();
-      renderTrips(trips);
+      currentTrips = await response.json();
+      renderTrips(currentTrips);
     } catch (error) {
       console.error(error);
-      tableBody.innerHTML = `<tr><td colspan="6">Error loading trips.</td></tr>`;
+      if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="7">Error loading trips.</td></tr>`;
+      }
     }
   }
 
   function renderTrips(trips) {
-    if (trips.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="6">No trips found.</td></tr>`;
+    if (!tableBody) return;
+
+    if (!trips || trips.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="7">No routes found.</td></tr>';
       return;
     }
 
     tableBody.innerHTML = trips.map(trip => `
       <tr data-id="${trip._id}">
-        <td>${trip.startStation}</td>
-        <td>${trip.endStation}</td>
-        <td>${trip.departureTime}</td>
-        <td>${trip.arrivalTime}</td>
-        <td>${trip.trainId}</td>
+        <td><strong>${trip.name || 'N/A'}</strong></td>
+        <td class="text-capitalize">${trip.region || 'N/A'}</td>
+        <td class="text-capitalize">${trip.startStation || 'N/A'}</td>
+        <td class="text-capitalize">${trip.endStation || 'N/A'}</td>
+        <td>${trip.duration || 'N/A'}</td>
+        <td>${trip.distance ? trip.distance + ' km' : 'N/A'}</td>
         <td>
-          <button class="btn-edit" data-trip='${JSON.stringify(trip)}'>Edit</button>
-          <button class="btn-delete" data-id="${trip._id}">Delete</button>
+          <div class="action-buttons">
+            <button type="button" class="btn btn-edit" data-id="${trip._id}">Edit</button>
+            <button type="button" class="btn btn-delete" data-id="${trip._id}">Delete</button>
+          </div>
         </td>
       </tr>
     `).join('');
   }
 
-  tableBody.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('btn-delete')) {
-      const tripId = e.target.dataset.id;
-      if (confirm('Are you sure you want to delete this trip?')) {
-        try {
-          const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
-          if (!res.ok) throw new Error('Failed to delete');
-          loadTrips();
-        } catch (err) {
-          alert('Could not delete trip');
+  if (tableBody) {
+    tableBody.addEventListener('click', async (e) => {
+      if (e.target.classList.contains('btn-delete')) {
+        const tripId = e.target.dataset.id;
+        if (confirm('Are you sure you want to delete this route?')) {
+          try {
+            const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete');
+            loadTrips();
+          } catch (err) {
+            alert('Could not delete route');
+          }
         }
       }
-    }
 
-    if (e.target.classList.contains('btn-edit')) {
-      const trip = JSON.parse(e.target.dataset.trip);
-      document.getElementById('edit-trip-id').value = trip._id;
-      document.getElementById('edit-start').value = trip.startStation;
-      document.getElementById('edit-end').value = trip.endStation;
-      document.getElementById('edit-departure').value = trip.departureTime;
-      document.getElementById('edit-arrival').value = trip.arrivalTime;
-      document.getElementById('edit-train').value = trip.trainId;
-      editModal.showModal();
-    }
-  });
+      if (e.target.classList.contains('btn-edit')) {
+        const tripId = e.target.dataset.id;
+        const trip = currentTrips.find(t => t._id === tripId);
+        
+        if (trip) {
+          document.getElementById('edit-trip-id').value = trip._id;
+          document.getElementById('edit-name').value = trip.name || '';
+          document.getElementById('edit-region').value = trip.region || '';
+          document.getElementById('edit-start').value = trip.startStation || '';
+          document.getElementById('edit-end').value = trip.endStation || '';
+          document.getElementById('edit-duration').value = trip.duration || '';
+          document.getElementById('edit-distance').value = trip.distance || '';
+          
+          if (editModal) editModal.showModal();
+        }
+      }
+    });
+  }
 
-  editForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('edit-trip-id').value;
-    const updatedData = {
-      startStation: document.getElementById('edit-start').value,
-      endStation: document.getElementById('edit-end').value,
-      departureTime: document.getElementById('edit-departure').value,
-      arrivalTime: document.getElementById('edit-arrival').value,
-      trainId: document.getElementById('edit-train').value
-    };
-
-    try {
-      const res = await fetch(`/api/trips/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-      });
-
-      if (!res.ok) throw new Error('Update failed');
+  if (editForm) {
+    editForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('edit-trip-id').value;
       
-      editModal.close();
-      loadTrips();
-    } catch (err) {
-      alert('Error updating trip');
-    }
-  });
+      const updatedData = {
+        name: document.getElementById('edit-name').value,
+        region: document.getElementById('edit-region').value,
+        startStation: document.getElementById('edit-start').value,
+        endStation: document.getElementById('edit-end').value,
+        duration: document.getElementById('edit-duration').value,
+        distance: Number(document.getElementById('edit-distance').value)
+      };
 
-  cancelBtn.addEventListener('click', () => editModal.close());
+      try {
+        const res = await fetch(`/api/trips/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        });
+
+        if (!res.ok) throw new Error('Update failed');
+        
+        if (editModal) editModal.close();
+        loadTrips();
+      } catch (err) {
+        alert('Error updating route');
+      }
+    });
+  }
+
+  if (cancelBtn && editModal) {
+    cancelBtn.addEventListener('click', () => editModal.close());
+  }
 
   loadTrips();
 });

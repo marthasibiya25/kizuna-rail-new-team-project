@@ -43,3 +43,6 @@ export const requirePageRole = (role) => (req, res, next) => {
 
   next();
 };
+
+export const requireAuth = requireApiLogin;
+export const requireAdmin = requireApiRole('admin');
