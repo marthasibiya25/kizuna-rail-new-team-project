@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Trip from "./schemas/trips.js";
 
 export async function getTripById(id) {
