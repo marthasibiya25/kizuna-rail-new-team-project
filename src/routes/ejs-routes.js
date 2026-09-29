@@ -23,5 +23,8 @@ router.get("/routes/bookings/:bookingId", bookingConfirmationPage);
 
 // Bookings admin page
 router.get("/bookings-admin", bookingsAdminPage);
-
+// login page
+router.get('/login', (req, res) => {
+  res.render('login', { title: 'Login' }); 
+});
 export default router;

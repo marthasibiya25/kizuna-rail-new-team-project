@@ -4,13 +4,13 @@ import {
   getTicketClassesForDay,
 } from "../controllers/ticket-classes.js";
 import { getAllBookings } from "../controllers/bookings.js";
-import { getAllTrips, getTripById } from "../controllers/trips.js";
+import { getAllTrips, getTripById, deleteTrip, updateTrip } from "../controllers/trips.js";
 import {
   getSchedulesForTrip,
   getSchedulesForTripAndMonth,
 } from "../controllers/schedules.js";
 import { getAllStations, getStationById } from '../controllers/stations.js';
-
+import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -202,6 +202,49 @@ router.get("/trips/:id/schedules", (req, res, next) => {
 
   return getSchedulesForTrip(req, res, next);
 });
+/**
+ * @swagger
+ * /api/trips/{id}:
+ *   put:
+ *     summary: Update an existing trip (Admin only)
+ *     tags: [Trips]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Trip updated successfully
+ *       403:
+ *         description: Forbidden - Admin access required
+ */
+router.put('/trips/:id', requireAuth, requireAdmin, updateTrip);
+
+/**
+ * @swagger
+ * /api/trips/{id}:
+ *   delete:
+ *     summary: Delete a trip (Admin only)
+ *     tags: [Trips]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Trip deleted successfully
+ *       403:
+ *         description: Forbidden - Admin access required
+ */
+router.delete('/trips/:id', requireAuth, requireAdmin, deleteTrip);
 
 /**
  * @swagger
