@@ -52,7 +52,7 @@
                         <li><a href="/login">Login</a></li>
                         <% } else { %>
                             <li>
-                                <a href="/user/dashboard">
+                                <a href="<%= user.role === 'admin' ? '/admin' : '/user/dashboard' %>">
                                     Dashboard
                                 </a>
                             </li>

@@ -17,6 +17,10 @@ router.get("/403", (req, res) => {
   res.status(403).render("errors/403", { title: "Forbidden" });
 });
 
+router.get("/admin", requirePageRole("admin"), (req, res) => {
+  res.render("admin/dashboard", { title: "Admin Dashboard" });
+});
+
 router.get("/users-admin", requirePageRole("admin"), usersAdminPage);
 
 router.post("/register", register);
