@@ -75,7 +75,7 @@ export async function login(req, res) {
       role: user.role.name,
     };
 
-    return res.redirect("/");
+    return res.redirect("/user/dashboard");
   } catch (error) {
     console.error("Unable to log in user:", error);
 

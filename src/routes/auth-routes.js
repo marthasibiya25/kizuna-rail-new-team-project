@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { login, logout, register } from "../controllers/auth.js";
+import { usersAdminPage } from "../controllers/users.js";
 import { requirePageRole } from "../middleware/auth.js";
 
 const router = Router();
@@ -16,9 +17,7 @@ router.get("/403", (req, res) => {
   res.status(403).render("errors/403", { title: "Forbidden" });
 });
 
-router.get("/admin", requirePageRole("admin"), (req, res) => {
-  res.render("admin/dashboard", { title: "Admin Dashboard" });
-});
+router.get("/users-admin", requirePageRole("admin"), usersAdminPage);
 
 router.post("/register", register);
 router.post("/login", login);
