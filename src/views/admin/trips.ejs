@@ -7,49 +7,31 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <main class="container">
+  <main class="admin-page">
+    <div class="container">
     <h1>Trip Administration</h1>
     <p>Logged in as: <strong><%= user ? user.username : 'Admin' %></strong></p>
 
     <section class="admin-table-container">
-      <table id="trips-table">
-        <thead>
-          <tr>
-            <th>Route Name</th>
-            <th>Region</th>
-            <th>Start Station</th>
-            <th>End Station</th>
-            <th>Duration</th>
-            <th>Distance</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="trips-table-body">
-          <% if (typeof trips !== 'undefined' && trips.length > 0) { %>
-            <% trips.forEach(trip => { %>
-              <tr data-id="<%= trip._id %>">
-                <td><strong><%= trip.name %></strong></td>
-                <td class="text-capitalize"><%= trip.region %></td>
-                <td class="text-capitalize"><%= trip.startStation %></td>
-                <td class="text-capitalize"><%= trip.endStation %></td>
-                <td><%= trip.duration %></td>
-                <td><%= trip.distance %> km</td>
-                <td>
-                  <div class="action-buttons">
-                    <button type="button" class="btn btn-edit" data-id="<%= trip._id %>">Edit</button>
-                    <button type="button" class="btn btn-delete" data-id="<%= trip._id %>">Delete</button>
-                  </div>
-                </td>
-              </tr>
-            <% }) %>
-          <% } else { %>
-            <tr>
-              <td colspan="7">Loading trips...</td>
-            </tr>
-          <% } %>
-        </tbody>
-      </table>
-    </section>
+  <table id="trips-table">
+    <thead>
+      <tr>
+        <th>Route Name</th>
+        <th>Region</th>
+        <th>Start Station</th>
+        <th>End Station</th>
+        <th>Duration</th>
+        <th>Distance</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="trips-table-body">
+      <tr>
+        <td colspan="7" class="text-center">Loading trips...</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
 
     <dialog id="edit-trip-modal">
       <form id="edit-trip-form">
@@ -80,6 +62,7 @@
         </menu>
       </form>
     </dialog>
+    </div>
   </main>
 
   <script src="/js/admin-trips.js" type="module"></script>

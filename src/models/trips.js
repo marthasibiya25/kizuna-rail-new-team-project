@@ -20,6 +20,11 @@ export const updateTripById = async (id, updateData) => {
     { returnDocument: 'after', runValidators: true } 
   ).lean();
 };
+
 export const deleteTripById = async (id) => {
-  return await Trip.findByIdAndDelete(id).lean();
+  const query = mongoose.Types.ObjectId.isValid(id)
+    ? { $or: [{ _id: id }, { id }] }
+    : { id };
+
+  return await Trip.findOneAndDelete(query).lean();
 };

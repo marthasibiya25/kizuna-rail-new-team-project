@@ -1,29 +1,25 @@
-:root {
+.admin-page {
   --bg-primary: #94b29d;      
   --bg-card: #ffffff;          
-  --bg-banner: #c2d8c9;       
+  --bg-banner: #c2d8c9;        
   --bg-input: #f4f8f5;         
-  --text-dark: #223528;       
-  --text-muted: #536959;      
+  --text-dark: #223528;        
+  --text-muted: #2e4334;      
   --accent-green: #689d81;  
   --accent-green-hover: #508066;
   --danger: #d9534f;
   --danger-hover: #c9302c;
   --border: #d2e1d7;
   --radius: 10px;
-}
 
-body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-primary);
   color: var(--text-dark);
-  margin: 0;
   padding: 2rem 1rem;
   display: flex;
   justify-content: center;
 }
 
-.container {
+.admin-page .container {
   width: 100%;
   max-width: 1100px;
   background-color: var(--bg-banner);
@@ -33,19 +29,19 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-h1 {
+.admin-page h1 {
   margin-top: 0;
   font-size: 1.8rem;
   color: var(--text-dark);
   letter-spacing: -0.5px;
 }
 
-p {
+.admin-page p {
   color: var(--text-muted);
   margin-bottom: 1.5rem;
 }
 
-.admin-table-container {
+.admin-page .admin-table-container {
   background-color: var(--bg-card);
   overflow-x: auto;
   border-radius: var(--radius);
@@ -54,14 +50,14 @@ p {
   margin-top: 1rem;
 }
 
-table {
+.admin-page table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.95rem;
 }
 
-th {
+.admin-page th {
   background-color: #eaf1ed;
   color: var(--text-dark);
   font-weight: 700;
@@ -72,31 +68,31 @@ th {
   border-bottom: 1px solid var(--border);
 }
 
-td {
+.admin-page td {
   padding: 0.9rem 1rem;
   border-bottom: 1px solid var(--border);
   color: var(--text-dark);
   vertical-align: middle;
 }
 
-tr:last-child td {
+.admin-page tr:last-child td {
   border-bottom: none;
 }
 
-tr:hover td {
+.admin-page tr:hover td {
   background-color: #f7faf8;
 }
 
-.text-capitalize {
+.admin-page .text-capitalize {
   text-transform: capitalize;
 }
 
-.action-buttons {
+.admin-page .action-buttons {
   display: flex;
   gap: 0.5rem;
 }
 
-.btn {
+.admin-page .btn {
   padding: 0.45rem 0.85rem;
   border: none;
   border-radius: 6px;
@@ -106,27 +102,28 @@ tr:hover td {
   transition: all 0.2s ease;
 }
 
-.btn-edit {
+.admin-page .btn-edit {
   background-color: var(--accent-green);
+  color: #122419;
+}
+
+.admin-page .btn-edit:hover {
+  background-color: var(--accent-green-hover);
   color: #ffffff;
 }
 
-.btn-edit:hover {
-  background-color: var(--accent-green-hover);
-}
-
-.btn-delete {
+.admin-page .btn-delete {
   background-color: #fbeae8;
   color: var(--danger);
   border: 1px solid #f5c6cb;
 }
 
-.btn-delete:hover {
+.admin-page .btn-delete:hover {
   background-color: var(--danger);
   color: #ffffff;
 }
 
-dialog {
+.admin-page dialog {
   background-color: var(--bg-card);
   color: var(--text-dark);
   border: 1px solid var(--border);
@@ -137,12 +134,12 @@ dialog {
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
 }
 
-dialog::backdrop {
+.admin-page dialog::backdrop {
   background-color: rgba(34, 53, 40, 0.4);
   backdrop-filter: blur(3px);
 }
 
-dialog h2 {
+.admin-page dialog h2 {
   margin-top: 0;
   margin-bottom: 1.5rem;
   font-size: 1.4rem;
@@ -151,37 +148,38 @@ dialog h2 {
   padding-bottom: 0.75rem;
 }
 
-#edit-trip-form {
+.admin-page #edit-trip-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-#edit-trip-form label {
+.admin-page #edit-trip-form label {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: -0.5rem;
 }
 
-#edit-trip-form input[type="text"],
-#edit-trip-form input[type="number"] {
+.admin-page #edit-trip-form input[type="text"],
+.admin-page #edit-trip-form input[type="number"] {
   background-color: var(--bg-input);
   border: 1px solid var(--border);
   color: var(--text-dark);
   padding: 0.65rem 0.85rem;
   border-radius: 6px;
   font-size: 0.95rem;
-  outline: none;
   transition: border-color 0.2s;
 }
 
-#edit-trip-form input:focus {
-  border-color: var(--accent-green);
-  background-color: #ffffff;
+.admin-page #edit-trip-form input:focus-visible,
+.admin-page .btn:focus-visible,
+.admin-page menu button:focus-visible {
+  outline: 2px solid #122419;
+  outline-offset: 2px;
 }
 
-menu {
+.admin-page menu {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
@@ -189,7 +187,7 @@ menu {
   margin-top: 1rem;
 }
 
-menu button[type="button"] {
+.admin-page menu button[type="button"] {
   background-color: transparent;
   color: var(--text-muted);
   border: 1px solid var(--border);
@@ -200,14 +198,14 @@ menu button[type="button"] {
   transition: all 0.2s;
 }
 
-menu button[type="button"]:hover {
+.admin-page menu button[type="button"]:hover {
   background-color: var(--bg-input);
   color: var(--text-dark);
 }
 
-menu button[type="submit"] {
+.admin-page menu button[type="submit"] {
   background-color: var(--accent-green);
-  color: #ffffff;
+  color: #122419;
   border: none;
   padding: 0.5rem 1.25rem;
   border-radius: 6px;
@@ -216,6 +214,7 @@ menu button[type="submit"] {
   transition: background-color 0.2s;
 }
 
-menu button[type="submit"]:hover {
+.admin-page menu button[type="submit"]:hover {
   background-color: var(--accent-green-hover);
+  color: #ffffff;
 }

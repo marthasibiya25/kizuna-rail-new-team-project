@@ -4,7 +4,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const editForm = document.getElementById('edit-trip-form');
   const cancelBtn = document.getElementById('cancel-edit-btn');
 
-  let currentTrips = []; 
+  let currentTrips = [];
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
 
   async function loadTrips() {
     try {
@@ -29,53 +37,76 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    tableBody.innerHTML = trips.map(trip => `
-      <tr data-id="${trip._id}">
-        <td><strong>${trip.name || 'N/A'}</strong></td>
-        <td class="text-capitalize">${trip.region || 'N/A'}</td>
-        <td class="text-capitalize">${trip.startStation || 'N/A'}</td>
-        <td class="text-capitalize">${trip.endStation || 'N/A'}</td>
-        <td>${trip.duration || 'N/A'}</td>
-        <td>${trip.distance ? trip.distance + ' km' : 'N/A'}</td>
-        <td>
-          <div class="action-buttons">
-            <button type="button" class="btn btn-edit" data-id="${trip._id}">Edit</button>
-            <button type="button" class="btn btn-delete" data-id="${trip._id}">Delete</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+    tableBody.innerHTML = trips.map(trip => {
+      const id = trip._id || trip.id;
+      const routeName = esc(trip.name || trip.routeName) || 'N/A';
+      const start = esc(trip.startStation || trip.start_station || trip.departureStation || trip.start) || 'N/A';
+      const end = esc(trip.endStation || trip.end_station || trip.arrivalStation || trip.end) || 'N/A';
+
+      return `
+        <tr data-id="${esc(id)}">
+          <td><strong>${routeName}</strong></td>
+          <td class="text-capitalize">${esc(trip.region) || 'N/A'}</td>
+          <td class="text-capitalize">${start}</td>
+          <td class="text-capitalize">${end}</td>
+          <td>${esc(trip.duration) || 'N/A'}</td>
+          <td>${trip.distance ? esc(trip.distance) + ' km' : 'N/A'}</td>
+          <td>
+            <div class="action-buttons">
+              <button type="button" class="btn btn-edit" data-id="${esc(id)}" aria-label="Edit ${routeName}">Edit</button>
+              <button type="button" class="btn btn-delete" data-id="${esc(id)}" aria-label="Delete ${routeName}">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
   if (tableBody) {
     tableBody.addEventListener('click', async (e) => {
-      if (e.target.classList.contains('btn-delete')) {
-        const tripId = e.target.dataset.id;
-        if (confirm('Are you sure you want to delete this route?')) {
-          try {
-            const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Failed to delete');
-            loadTrips();
-          } catch (err) {
-            alert('Could not delete route');
+      const editBtn = e.target.closest('.btn-edit');
+      const deleteBtn = e.target.closest('.btn-delete');
+
+      if (editBtn) {
+        const tripId = editBtn.dataset.id;
+        const trip = currentTrips.find(t => String(t._id || t.id) === String(tripId));
+
+        if (trip && editForm) {
+          editForm.dataset.tripId = tripId;
+
+          const nameInput = document.getElementById('edit-name');
+          const regionInput = document.getElementById('edit-region');
+          const startInput = document.getElementById('edit-start');
+          const endInput = document.getElementById('edit-end');
+          const durationInput = document.getElementById('edit-duration');
+          const distanceInput = document.getElementById('edit-distance');
+
+          if (nameInput) nameInput.value = trip.name || trip.routeName || '';
+          if (regionInput) regionInput.value = trip.region || '';
+          if (startInput) startInput.value = trip.startStation || trip.start_station || trip.departureStation || trip.start || '';
+          if (endInput) endInput.value = trip.endStation || trip.end_station || trip.arrivalStation || trip.end || '';
+          if (durationInput) durationInput.value = trip.duration || '';
+          if (distanceInput) distanceInput.value = trip.distance ?? '';
+
+          if (editModal && typeof editModal.showModal === 'function') {
+            editModal.showModal();
+          } else if (editModal) {
+            editModal.style.display = 'block';
           }
         }
       }
 
-      if (e.target.classList.contains('btn-edit')) {
-        const tripId = e.target.dataset.id;
-        const trip = currentTrips.find(t => t._id === tripId);
-        
-        if (trip) {
-          document.getElementById('edit-trip-id').value = trip._id;
-          document.getElementById('edit-name').value = trip.name || '';
-          document.getElementById('edit-region').value = trip.region || '';
-          document.getElementById('edit-start').value = trip.startStation || '';
-          document.getElementById('edit-end').value = trip.endStation || '';
-          document.getElementById('edit-duration').value = trip.duration || '';
-          document.getElementById('edit-distance').value = trip.distance || '';
-          
-          if (editModal) editModal.showModal();
+      if (deleteBtn) {
+        const tripId = deleteBtn.dataset.id;
+        if (confirm('Are you sure you want to delete this trip?')) {
+          try {
+            const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete trip');
+            await loadTrips();
+          } catch (err) {
+            console.error(err);
+            alert('Error deleting trip');
+          }
         }
       }
     });
@@ -84,36 +115,58 @@ document.addEventListener('DOMContentLoaded', () => {
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const id = document.getElementById('edit-trip-id').value;
-      
-      const updatedData = {
-        name: document.getElementById('edit-name').value,
-        region: document.getElementById('edit-region').value,
-        startStation: document.getElementById('edit-start').value,
-        endStation: document.getElementById('edit-end').value,
-        duration: document.getElementById('edit-duration').value,
-        distance: Number(document.getElementById('edit-distance').value)
+      const tripId = editForm.dataset.tripId;
+
+      const nameVal = document.getElementById('edit-name')?.value.trim() || '';
+      const regionVal = document.getElementById('edit-region')?.value.trim() || '';
+      const startVal = document.getElementById('edit-start')?.value.trim() || '';
+      const endVal = document.getElementById('edit-end')?.value.trim() || '';
+      const durationVal = document.getElementById('edit-duration')?.value.trim() || '';
+      const distVal = document.getElementById('edit-distance')?.value || '0';
+
+      const updatedTrip = {
+        name: nameVal,
+        region: regionVal,
+        startStation: startVal,
+        start_station: startVal,
+        endStation: endVal,
+        end_station: endVal,
+        duration: durationVal,
+        distance: Number(distVal)
       };
 
       try {
-        const res = await fetch(`/api/trips/${id}`, {
+        const res = await fetch(`/api/trips/${tripId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedData)
+          body: JSON.stringify(updatedTrip)
         });
 
-        if (!res.ok) throw new Error('Update failed');
-        
-        if (editModal) editModal.close();
-        loadTrips();
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Error updating trip');
+        }
+
+        closeModal();
+        await loadTrips();
       } catch (err) {
-        alert('Error updating route');
+        console.error('Error al actualizar:', err);
+        alert(`Error al actualizar el viaje: ${err.message}`);
       }
     });
   }
 
-  if (cancelBtn && editModal) {
-    cancelBtn.addEventListener('click', () => editModal.close());
+  function closeModal() {
+    if (editForm) editForm.reset();
+    if (editModal && typeof editModal.close === 'function') {
+      editModal.close();
+    } else if (editModal) {
+      editModal.style.display = 'none';
+    }
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', closeModal);
   }
 
   loadTrips();

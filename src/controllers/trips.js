@@ -73,10 +73,24 @@ export async function renderTripDetailsPage(req, res) {
   }
 }
 
-export async function updateTrip(req, res, next) {
+export async function updateTrip(req, res) {
   try {
     const { id } = req.params;
     const { name, region, startStation, endStation, duration, distance } = req.body;
+
+    const distanceNum = Number(distance);
+
+    if (
+      !name ||
+      !region ||
+      !startStation ||
+      !endStation ||
+      !duration ||
+      !Number.isFinite(distanceNum) ||
+      distanceNum < 0
+    ) {
+      return res.status(400).json({ message: "Invalid trip data" });
+    }
 
     const updatedTrip = await updateTripModel(id, {
       name,
@@ -84,18 +98,23 @@ export async function updateTrip(req, res, next) {
       startStation,
       endStation,
       duration,
-      distance: Number(distance)
+      distance: distanceNum
     });
 
     if (!updatedTrip) {
-      return res.status(404).json({ error: 'Trip not found' });
+      return res.status(404).json({ message: "Trip not found" });
     }
 
-    return res.status(200).json({ message: 'Trip updated successfully', trip: updatedTrip });
+    return res.json(updatedTrip);
   } catch (error) {
-    next(error);
+    console.error("Error updating trip:", error);
+    return res.status(500).json({ message: "Server error updating trip" });
   }
 }
+
+
+
+
 export async function deleteTrip(req, res, next) {
   try {
     const { id } = req.params;

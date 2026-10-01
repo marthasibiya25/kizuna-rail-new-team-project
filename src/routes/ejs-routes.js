@@ -27,4 +27,11 @@ router.get("/bookings-admin", bookingsAdminPage);
 router.get('/login', (req, res) => {
   res.render('login', { title: 'Login' }); 
 });
+
+router.get('/403', (req, res) => {
+  res.status(403).render('errors/403', { 
+    title: '403 - Access Denied',
+    user: req.user || req.session?.user 
+  });
+});
 export default router;
