@@ -1,46 +1,45 @@
-// TEMPORARY STUB for Feature Set 1 (#13) Core Authentication.
-// Exports match the documented contract exactly — delete this file
-// once #13 is merged; nothing else needs to change as long as the
-// real file exports these same four functions from this same path.
+export const loadSessionUser = (req, res, next) => {
+  req.user = req.session.user || null;
+  res.locals.user = req.user;
+  next();
+};
 
-export function requireApiLogin() {
-  return (req, res, next) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    return next();
-  };
-}
+export const requireApiLogin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
 
-export function requirePageLogin() {
-  return (req, res, next) => {
-    if (!req.session?.user) {
-      return res.redirect("/login");
-    }
-    return next();
-  };
-}
+  next();
+};
 
-export function requireApiRole(role) {
-  return (req, res, next) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    if (req.session.user.role !== role) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-    return next();
-  };
-}
+export const requirePageLogin = (req, res, next) => {
+  if (!req.user) {
+    return res.redirect("/login");
+  }
 
-export function requirePageRole(role) {
-  return (req, res, next) => {
-    if (!req.session?.user) {
-      return res.redirect("/login");
-    }
-    if (req.session.user.role !== role) {
-      return res.redirect("/403");
-    }
-    return next();
-  };
-}
+  next();
+};
+
+export const requireApiRole = (role) => (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+
+  if (req.user.role !== role) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+
+  next();
+};
+
+export const requirePageRole = (role) => (req, res, next) => {
+  if (!req.user) {
+    return res.redirect("/login");
+  }
+
+  if (req.user.role !== role) {
+    return res.redirect("/403");
+  }
+
+  next();
+};
