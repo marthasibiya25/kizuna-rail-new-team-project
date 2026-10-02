@@ -3,14 +3,19 @@ import {
   getAllTicketClasses,
   getTicketClassesForDay,
 } from "../controllers/ticket-classes.js";
-import { getAllBookings } from "../controllers/bookings.js";
 import { getAllTrips, getTripById, deleteTrip, updateTrip } from "../controllers/trips.js";
+import { getAllBookings, getMyBookings } from "../controllers/bookings.js";
 import {
   getSchedulesForTrip,
   getSchedulesForTripAndMonth,
 } from "../controllers/schedules.js";
 import { getAllStations, getStationById } from '../controllers/stations.js';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, requireApiLogin } from '../middleware/auth.js';
+import {
+  getUsers,
+  updateUserById,
+  deleteUserById,
+} from "../controllers/users.js";
 
 const router = Router();
 
@@ -74,6 +79,7 @@ const router = Router();
  *         description: Failed to fetch bookings.
  */
 router.get("/bookings", getAllBookings);
+router.get("/bookings/me", requireApiLogin, getMyBookings);
 
 /**
  * @swagger
@@ -348,7 +354,7 @@ router.delete('/trips/:id', requireAuth, requireAdmin, deleteTrip);
  *       500:
  *         description: Internal server error
  */
-router.get('/stations', getAllStations);
+router.get("/stations", getAllStations);
 
 /**
  * @swagger
@@ -376,6 +382,10 @@ router.get('/stations', getAllStations);
  *       500:
  *         description: Internal server error
  */
-router.get('/stations/:id', getStationById);
+router.get("/stations/:id", getStationById);
+
+router.get("/users", requireApiLogin, getUsers);
+router.put("/users/:id", requireApiLogin, updateUserById);
+router.delete("/users/:id", requireApiLogin, deleteUserById);
 
 export default router;

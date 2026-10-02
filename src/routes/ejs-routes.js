@@ -9,6 +9,8 @@ import {
   renderTripListPage,
   renderTripDetailsPage,
 } from "../controllers/trips.js";
+import { userAdminPage } from "../controllers/users.js";
+import { requirePageLogin, requirePageRole } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -22,11 +24,27 @@ router.post("/routes/book", processBookingRequest);
 router.get("/routes/bookings/:bookingId", bookingConfirmationPage);
 
 // Bookings admin page
-router.get("/bookings-admin", bookingsAdminPage);
-// login page
-router.get('/login', (req, res) => {
-  res.render('login', { title: 'Login' }); 
+router.get(
+  "/bookings-admin",
+  requirePageRole("admin"),
+  bookingsAdminPage,
+);
+
+router.get("/login", (req, res) => {
+  res.render("login", {
+    title: "Login",
+  });
 });
+
+// User dashboard page
+router.get("/user/dashboard", requirePageLogin, (req, res) => {
+  res.render("user/dashboard", {
+    title: "User Dashboard",
+  });
+});
+
+// User admin page
+router.get("/user-admin", requirePageLogin, userAdminPage);
 
 router.get('/403', (req, res) => {
   res.status(403).render('errors/403', { 
