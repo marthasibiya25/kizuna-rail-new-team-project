@@ -3,20 +3,19 @@ import {
   getAllTicketClasses,
   getTicketClassesForDay,
 } from "../controllers/ticket-classes.js";
+import { getAllTrips, getTripById, deleteTrip, updateTrip } from "../controllers/trips.js";
 import { getAllBookings, getMyBookings } from "../controllers/bookings.js";
-import { requireApiLogin } from "../middleware/auth.js";
-import { getAllTrips, getTripById } from "../controllers/trips.js";
 import {
   getSchedulesForTrip,
   getSchedulesForTripAndMonth,
 } from "../controllers/schedules.js";
-import { getAllStations, getStationById } from "../controllers/stations.js";
+import { getAllStations, getStationById } from '../controllers/stations.js';
+import { requireAuth, requireAdmin, requireApiLogin } from '../middleware/auth.js';
 import {
   getUsers,
   updateUserById,
   deleteUserById,
 } from "../controllers/users.js";
-import { requireApiLogin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -209,7 +208,86 @@ router.get("/trips/:id/schedules", (req, res, next) => {
 
   return getSchedulesForTrip(req, res, next);
 });
+/**
+ * @swagger
+ * /api/trips/{id}:
+ *   put:
+ *     summary: Update an existing trip (Admin only)
+ *     tags: [Trips]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The trip ID (Mongoose ObjectId or string ID)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Hokkaido Shinkansen"
+ *               region:
+ *                 type: string
+ *                 example: "Hokkaido"
+ *               startStation:
+ *                 type: string
+ *                 example: "Shin-Hakodate-Hokuto"
+ *               endStation:
+ *                 type: string
+ *                 example: "Tokyo"
+ *               duration:
+ *                 type: string
+ *                 example: "4h 00m"
+ *               distance:
+ *                 type: number
+ *                 example: 823.7
+ *     responses:
+ *       200:
+ *         description: Trip updated successfully
+ *       400:
+ *         description: Bad request - Invalid trip data
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: Trip not found
+ */
+router.put('/trips/:id', requireAuth, requireAdmin, updateTrip);
 
+/**
+ * @swagger
+ * /api/trips/{id}:
+ *   delete:
+ *     summary: Delete a trip (Admin only)
+ *     tags: [Trips]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The trip ID to delete
+ *     responses:
+ *       200:
+ *         description: Trip deleted successfully
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: Trip not found
+ */
+router.delete('/trips/:id', requireAuth, requireAdmin, deleteTrip);
 /**
  * @swagger
  * components:
