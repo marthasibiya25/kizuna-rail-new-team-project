@@ -21,6 +21,6 @@ router.post("/routes/book", processBookingRequest);
 router.get("/routes/bookings/:bookingId", bookingConfirmationPage);
 
 // Bookings admin page (protected — requires login)
-router.get("/bookings-admin", requirePageLogin(), bookingsAdminPage);
+router.get("/bookings-admin", requirePageLogin, bookingsAdminPage);
 
 export default router;

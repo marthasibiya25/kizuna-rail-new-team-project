@@ -73,25 +73,22 @@ export function bookingsAdminPage(req, res) {
   res.render("bookings", { title: "Bookings Admin" });
 }
 
-// Helper: can this session user view/modify this booking?
+// Helper: can this user view/modify this booking?
 function isOwnerOrAdmin(user, booking) {
   if (user.role === "admin") return true;
-  return (booking.passengers || []).some((passenger) => passenger.email === user.email);
+  const userEmail = user.email?.toLowerCase();
+  return (booking.passengers || []).some(
+    (passenger) => passenger.email?.toLowerCase() === userEmail
+  );
 }
 
 // API controllers
 
 export async function getAllBookings(req, res) {
   try {
+    const user = req.user;
     const bookings = await findAllBookings();
-    const user = req.session.user;
-
-    const visibleBookings =
-      user.role === "admin"
-        ? bookings
-        : bookings.filter((booking) =>
-            (booking.passengers || []).some((passenger) => passenger.email === user.email)
-          );
+    const visibleBookings = bookings.filter((booking) => isOwnerOrAdmin(user, booking));
 
     return res.status(200).json(visibleBookings);
   } catch (error) {
@@ -103,7 +100,7 @@ export async function getAllBookings(req, res) {
 export async function updateBooking(req, res) {
   try {
     const { id } = req.params;
-    const user = req.session.user;
+    const user = req.user;
     const booking = await findBookingById(id);
 
     if (!booking) return res.status(404).json({ error: "Booking not found" });
@@ -123,7 +120,7 @@ export async function updateBooking(req, res) {
 export async function deleteBooking(req, res) {
   try {
     const { id } = req.params;
-    const user = req.session.user;
+    const user = req.user;
     const booking = await findBookingById(id);
 
     if (!booking) return res.status(404).json({ error: "Booking not found" });

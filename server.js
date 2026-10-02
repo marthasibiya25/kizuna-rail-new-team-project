@@ -10,7 +10,6 @@ import { fileURLToPath } from "url";
 import connectDB from "./src/models/db.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger.js";
-import session from "express-session";
 import dns from 'dns';
 dns.setDefaultResultOrder('ipv4first');
 if (process.env.DNS_SERVERS) {
@@ -64,18 +63,6 @@ app.use(
   }),
 );
 app.use(loadSessionUser);
-
-/**
- * Session (basic config — Feature Set 1 / #13 may extend this later)
- */
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "dev-secret-change-me",
-    resave: false,
-    saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 2 }, // 2 hours
-  })
-);
 
 /**
  * Global Middleware

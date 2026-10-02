@@ -81,7 +81,7 @@ const router = Router();
  *       500:
  *         description: Failed to fetch bookings.
  */
-router.get("/bookings", requireApiLogin(), getAllBookings);
+router.get("/bookings", requireApiLogin, getAllBookings);
 
 /**
  * @swagger
@@ -128,7 +128,7 @@ router.get("/bookings", requireApiLogin(), getAllBookings);
  *       404:
  *         description: Booking not found.
  */
-router.put("/bookings/:id", requireApiLogin(), updateBooking);
+router.put("/bookings/:id", requireApiLogin, updateBooking);
 
 /**
  * @swagger
@@ -154,7 +154,7 @@ router.put("/bookings/:id", requireApiLogin(), updateBooking);
  *       404:
  *         description: Booking not found.
  */
-router.delete("/bookings/:id", requireApiLogin(), deleteBooking);
+router.delete("/bookings/:id", requireApiLogin, deleteBooking);
 
 /**
  * @swagger
