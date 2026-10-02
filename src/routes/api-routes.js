@@ -3,7 +3,8 @@ import {
   getAllTicketClasses,
   getTicketClassesForDay,
 } from "../controllers/ticket-classes.js";
-import { getAllBookings } from "../controllers/bookings.js";
+import { getAllBookings, getMyBookings } from "../controllers/bookings.js";
+import { requireApiLogin } from "../middleware/auth.js";
 import { getAllTrips, getTripById } from "../controllers/trips.js";
 import {
   getSchedulesForTrip,
@@ -79,6 +80,7 @@ const router = Router();
  *         description: Failed to fetch bookings.
  */
 router.get("/bookings", getAllBookings);
+router.get("/bookings/me", requireApiLogin, getMyBookings);
 
 /**
  * @swagger

@@ -79,3 +79,10 @@ export async function deleteUser(userId) {
 export async function verifyPassword(password, passwordHash) {
   return bcrypt.compare(password, passwordHash);
 }
+
+export async function getAllUsers() {
+  return User.find()
+    .populate("role")
+    .select("displayName username email role")
+    .sort({ displayName: 1 });
+}

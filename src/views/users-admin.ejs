@@ -1,0 +1,24 @@
+<%- include('./partials/header') %>
+
+<h1>Users Admin</h1>
+
+<section>
+    <h2>Registered Users</h2>
+
+    <% if (users.length === 0) { %>
+        <p>No users found.</p>
+    <% } else { %>
+        <div>
+            <% users.forEach((user) => { %>
+                <article>
+                    <h3><%= user.displayName %></h3>
+                    <p><strong>Username:</strong> <%= user.username %></p>
+                    <p><strong>Email:</strong> <%= user.email %></p>
+                    <p><strong>Role:</strong> <%= user.role?.name || "Unknown" %></p>
+                </article>
+            <% }); %>
+        </div>
+    <% } %>
+</section>
+
+<%- include('./partials/footer') %>
