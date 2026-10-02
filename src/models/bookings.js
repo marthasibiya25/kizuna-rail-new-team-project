@@ -27,3 +27,9 @@ export async function getAllBookings() {
 export async function getBookingById(bookingId) {
   return Booking.findOne({ id: bookingId });
 }
+
+export async function getBookingsByPassengerEmail(email) {
+  return Booking.find({
+    "passengers.email": email.trim().toLowerCase(),
+  }).sort({ createdAt: -1 });
+}
