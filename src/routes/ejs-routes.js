@@ -5,8 +5,12 @@ import {
   bookingConfirmationPage,
   bookingsAdminPage,
 } from "../controllers/bookings.js";
-import { renderTripListPage } from "../controllers/routes/index.js";
-import { renderTripDetailsPage } from "../controllers/routes/details.js";
+import {
+  renderTripListPage,
+  renderTripDetailsPage,
+} from "../controllers/trips.js";
+import { userAdminPage } from "../controllers/users.js";
+import { requirePageLogin, requirePageRole } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -20,6 +24,20 @@ router.post("/routes/book", processBookingRequest);
 router.get("/routes/bookings/:bookingId", bookingConfirmationPage);
 
 // Bookings admin page
-router.get("/bookings-admin", bookingsAdminPage);
+router.get(
+  "/bookings-admin",
+  requirePageRole("admin"),
+  bookingsAdminPage,
+);
+
+// User dashboard page
+router.get("/user/dashboard", requirePageLogin, (req, res) => {
+  res.render("user/dashboard", {
+    title: "User Dashboard",
+  });
+});
+
+// User admin page
+router.get("/user-admin", requirePageLogin, userAdminPage);
 
 export default router;

@@ -5,6 +5,7 @@ import {
   createBooking as saveBooking,
   getAllBookings as findAllBookings,
   getBookingById as findBookingById,
+  getBookingsByPassengerEmail as findBookingsByPassengerEmail,
 } from "../models/bookings.js";
 
 // EJS controllers
@@ -31,7 +32,7 @@ export async function bookingPage(req, res, next) {
       description: ticketClass.description,
     }));
 
-    return res.render("bookings/booking", {
+    return res.render("bookings/bookings", {
       title: "Book Trip",
       schedule,
       ticketOptions,
@@ -46,7 +47,7 @@ export async function processBookingRequest(req, res, next) {
   try {
     const booking = await saveBooking(req.body);
 
-    return res.redirect(`/routes/confirmation/${booking.id}`);
+    return res.redirect(`/routes/bookings/${booking.id}`);
   } catch (error) {
     if (error.name === "ValidationError") {
       return res
@@ -62,9 +63,9 @@ export async function processBookingRequest(req, res, next) {
 
 export async function bookingConfirmationPage(req, res, next) {
   try {
-    const { confirmationId } = req.params;
+    const { bookingId } = req.params;
 
-    const confirmation = await findBookingById(confirmationId);
+    const confirmation = await findBookingById(bookingId);
 
     if (!confirmation) {
       const err = new Error("Booking not found");
@@ -74,7 +75,7 @@ export async function bookingConfirmationPage(req, res, next) {
 
     return res.render("routes/confirm", {
       title: "Trip Confirmation",
-      confirmation,
+      booking: confirmation,
     });
   } catch (error) {
     console.error("Error fetching booking:", error);
@@ -99,6 +100,20 @@ export async function getAllBookings(req, res) {
 
     return res.status(500).json({
       error: "Failed to fetch bookings",
+    });
+  }
+}
+
+export async function getMyBookings(req, res) {
+  try {
+    const bookings = await findBookingsByPassengerEmail(req.user.email);
+
+    return res.status(200).json(bookings);
+  } catch (error) {
+    console.error("Error fetching user bookings:", error);
+
+    return res.status(500).json({
+      error: "Failed to fetch user bookings",
     });
   }
 }
