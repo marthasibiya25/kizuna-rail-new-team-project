@@ -9,6 +9,7 @@ import {
   renderTripListPage,
   renderTripDetailsPage,
 } from "../controllers/trips.js";
+import { userAdminPage } from "../controllers/users.js";
 import { requirePageLogin, requirePageRole } from "../middleware/auth.js";
 
 const router = Router();
@@ -35,5 +36,8 @@ router.get("/user/dashboard", requirePageLogin, (req, res) => {
     title: "User Dashboard",
   });
 });
+
+// User admin page
+router.get("/user-admin", requirePageLogin, userAdminPage);
 
 export default router;
