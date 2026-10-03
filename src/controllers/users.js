@@ -12,6 +12,20 @@ export function userAdminPage(req, res) {
   });
 }
 
+export async function usersAdminPage(req, res, next) {
+  try {
+    const users = await getAllUsers();
+
+    return res.render("users-admin", {
+      title: "Users Admin",
+      users,
+    });
+  } catch (error) {
+    console.error("Error loading users admin page:", error);
+    return next(error);
+  }
+}
+
 export async function getUsers(req, res) {
   try {
     if (req.user.role === "admin") {
