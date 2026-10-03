@@ -6,7 +6,7 @@ export const loadSessionUser = (req, res, next) => {
 
 export const requireApiLogin = (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({ message: "Authentication required" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   next();
@@ -22,7 +22,7 @@ export const requirePageLogin = (req, res, next) => {
 
 export const requireApiRole = (role) => (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({ message: "Authentication required" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   if (req.user.role !== role) {
@@ -43,3 +43,6 @@ export const requirePageRole = (role) => (req, res, next) => {
 
   next();
 };
+
+export const requireAuth = requireApiLogin;
+export const requireAdmin = requireApiRole('admin');

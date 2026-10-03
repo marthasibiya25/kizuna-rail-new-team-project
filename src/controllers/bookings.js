@@ -7,6 +7,7 @@ import {
   getBookingById as findBookingById,
   updateBookingById,
   deleteBookingById,
+  getBookingsByPassengerEmail as findBookingsByPassengerEmail,
 } from "../models/bookings.js";
 
 // EJS controllers
@@ -31,7 +32,11 @@ export async function bookingPage(req, res, next) {
       description: ticketClass.description,
     }));
 
-    return res.render("bookings/booking", { title: "Book Trip", schedule, ticketOptions });
+    return res.render("bookings/bookings", {
+      title: "Book Trip",
+      schedule,
+      ticketOptions,
+    });
   } catch (error) {
     console.error("Error loading booking page:", error);
     return next(error);
@@ -41,7 +46,8 @@ export async function bookingPage(req, res, next) {
 export async function processBookingRequest(req, res, next) {
   try {
     const booking = await saveBooking(req.body);
-    return res.redirect(`/routes/confirmation/${booking.id}`);
+
+    return res.redirect(`/routes/bookings/${booking.id}`);
   } catch (error) {
     if (error.name === "ValidationError") {
       return res.status(400).send("Invalid booking data. Please go back and check the form.");
@@ -53,8 +59,9 @@ export async function processBookingRequest(req, res, next) {
 
 export async function bookingConfirmationPage(req, res, next) {
   try {
-    const { confirmationId } = req.params;
-    const confirmation = await findBookingById(confirmationId);
+    const { bookingId } = req.params;
+
+    const confirmation = await findBookingById(bookingId);
 
     if (!confirmation) {
       const err = new Error("Booking not found");
@@ -62,7 +69,10 @@ export async function bookingConfirmationPage(req, res, next) {
       return next(err);
     }
 
-    return res.render("routes/confirm", { title: "Trip Confirmation", confirmation });
+    return res.render("routes/confirm", {
+      title: "Trip Confirmation",
+      booking: confirmation,
+    });
   } catch (error) {
     console.error("Error fetching booking:", error);
     return next(error);
@@ -131,5 +141,19 @@ export async function deleteBooking(req, res) {
   } catch (error) {
     console.error("Error deleting booking:", error);
     return res.status(500).json({ error: "Failed to delete booking" });
+  }
+}
+
+export async function getMyBookings(req, res) {
+  try {
+    const bookings = await findBookingsByPassengerEmail(req.user.email);
+
+    return res.status(200).json(bookings);
+  } catch (error) {
+    console.error("Error fetching user bookings:", error);
+
+    return res.status(500).json({
+      error: "Failed to fetch user bookings",
+    });
   }
 }

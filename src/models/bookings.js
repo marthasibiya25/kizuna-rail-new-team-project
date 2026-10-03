@@ -52,3 +52,9 @@ export async function updateBookingById(bookingId, updates) {
 export async function deleteBookingById(bookingId) {
   return Booking.findOneAndDelete({ id: bookingId });
 }
+
+export async function getBookingsByPassengerEmail(email) {
+  return Booking.find({
+    "passengers.email": email.trim().toLowerCase(),
+  }).sort({ createdAt: -1 });
+}
