@@ -15,6 +15,7 @@ import { requirePageLogin } from "../middleware/auth.js";
 const router = Router();
 
 router.get("/routes", renderTripListPage);
+router.get("/trips", renderTripListPage);
 router.get("/routes/:routeId", renderTripDetailsPage);
 
 router.get("/routes/booking/:scheduleId", bookingPage);

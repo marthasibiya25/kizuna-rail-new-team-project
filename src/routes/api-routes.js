@@ -204,18 +204,64 @@ router.get("/ticket-classes", async (req, res, next) => {
  * @swagger
  * /api/trips:
  *   get:
- *     summary: Get all trips
+ *     summary: Get a paginated list of trips
  *     tags:
  *       - Trips
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Positive page number. Defaults to 1.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
  *     responses:
  *       200:
- *         description: A list of trips
+ *         description: A page containing up to 10 trips.
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
+ *               type: object
+ *               required:
+ *                 - results
+ *                 - meta
+ *               properties:
+ *                 results:
+ *                   type: array
+ *                   maxItems: 10
+ *                   items:
+ *                     type: object
+ *                 meta:
+ *                   type: object
+ *                   required:
+ *                     - page
+ *                     - perPage
+ *                     - totalItems
+ *                     - totalPages
+ *                     - hasNextPage
+ *                     - hasPreviousPage
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     perPage:
+ *                       type: integer
+ *                       example: 10
+ *                     totalItems:
+ *                       type: integer
+ *                       example: 11
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 2
+ *                     hasNextPage:
+ *                       type: boolean
+ *                       example: true
+ *                     hasPreviousPage:
+ *                       type: boolean
+ *                       example: false
+ *       400:
+ *         description: The page parameter is not a positive integer.
  *       500:
  *         description: Failed to fetch trips
  */
