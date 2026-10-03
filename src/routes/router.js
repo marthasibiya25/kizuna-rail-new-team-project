@@ -8,10 +8,7 @@ import adminTripsRouter from './admin/trips.js';
 import { homePage, aboutPage, testErrorPage } from './index.js';
 const router = Router();
 
-// Home page
 router.get('/', homePage);
-
-// About page
 router.get('/about', aboutPage);
 
 // Authentication pages
@@ -26,11 +23,7 @@ router.use('/', ejsRoutes);
 
 // JSON API
 router.use('/api', apiRoutes);
-
-// Challenge scenarios
 router.use('/scenarios', challengeScenariosRouter);
-
-// Test 500 error page
 router.get('/500', testErrorPage);
 
 

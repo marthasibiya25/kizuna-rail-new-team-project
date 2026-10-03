@@ -3,19 +3,19 @@ import {
   getAllTicketClasses,
   getTicketClassesForDay,
 } from "../controllers/ticket-classes.js";
-import { getAllTrips, getTripById, deleteTrip, updateTrip } from "../controllers/trips.js";
-import { getAllBookings, getMyBookings } from "../controllers/bookings.js";
+import {
+  getAllBookings,
+  updateBooking,
+  deleteBooking,
+} from "../controllers/bookings.js";
+import { getAllTrips, getTripById } from "../controllers/trips.js";
 import {
   getSchedulesForTrip,
   getSchedulesForTripAndMonth,
 } from "../controllers/schedules.js";
 import { getAllStations, getStationById } from '../controllers/stations.js';
-import { requireAuth, requireAdmin, requireApiLogin } from '../middleware/auth.js';
-import {
-  getUsers,
-  updateUserById,
-  deleteUserById,
-} from "../controllers/users.js";
+import { requireApiLogin } from "../middleware/auth.js";
+
 
 const router = Router();
 
@@ -64,8 +64,9 @@ const router = Router();
  * @swagger
  * /api/bookings:
  *   get:
- *     summary: Get all bookings
+ *     summary: Get bookings visible to the current user
  *     tags: [Bookings]
+ *     description: Admins receive every booking. Standard users receive only bookings where their email matches a passenger.
  *     responses:
  *       200:
  *         description: A list of bookings, newest first.
@@ -75,11 +76,85 @@ const router = Router();
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Booking'
+ *       401:
+ *         description: Not authenticated.
  *       500:
  *         description: Failed to fetch bookings.
  */
-router.get("/bookings", getAllBookings);
-router.get("/bookings/me", requireApiLogin, getMyBookings);
+router.get("/bookings", requireApiLogin, getAllBookings);
+
+/**
+ * @swagger
+ * /api/bookings/{id}:
+ *   put:
+ *     summary: Update a booking
+ *     tags: [Bookings]
+ *     description: Standard users may only update bookings where they are a passenger. Admins may update any booking.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The booking's custom string ID (e.g. JR8K2M4XQ)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ticketClass:
+ *                 type: string
+ *               selectedDay:
+ *                 type: string
+ *               passengers:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: Booking updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Booking'
+ *       400:
+ *         description: Invalid booking data.
+ *       401:
+ *         description: Not authenticated.
+ *       403:
+ *         description: Not authorized to update this booking.
+ *       404:
+ *         description: Booking not found.
+ */
+router.put("/bookings/:id", requireApiLogin, updateBooking);
+
+/**
+ * @swagger
+ * /api/bookings/{id}:
+ *   delete:
+ *     summary: Delete a booking
+ *     tags: [Bookings]
+ *     description: Standard users may only delete bookings where they are a passenger. Admins may delete any booking.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The booking's custom string ID (e.g. JR8K2M4XQ)
+ *     responses:
+ *       200:
+ *         description: Booking deleted successfully.
+ *       401:
+ *         description: Not authenticated.
+ *       403:
+ *         description: Not authorized to delete this booking.
+ *       404:
+ *         description: Booking not found.
+ */
+router.delete("/bookings/:id", requireApiLogin, deleteBooking);
 
 /**
  * @swagger
@@ -208,86 +283,7 @@ router.get("/trips/:id/schedules", (req, res, next) => {
 
   return getSchedulesForTrip(req, res, next);
 });
-/**
- * @swagger
- * /api/trips/{id}:
- *   put:
- *     summary: Update an existing trip (Admin only)
- *     tags: [Trips]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: The trip ID (Mongoose ObjectId or string ID)
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: "Hokkaido Shinkansen"
- *               region:
- *                 type: string
- *                 example: "Hokkaido"
- *               startStation:
- *                 type: string
- *                 example: "Shin-Hakodate-Hokuto"
- *               endStation:
- *                 type: string
- *                 example: "Tokyo"
- *               duration:
- *                 type: string
- *                 example: "4h 00m"
- *               distance:
- *                 type: number
- *                 example: 823.7
- *     responses:
- *       200:
- *         description: Trip updated successfully
- *       400:
- *         description: Bad request - Invalid trip data
- *       401:
- *         description: Unauthorized - Authentication required
- *       403:
- *         description: Forbidden - Admin access required
- *       404:
- *         description: Trip not found
- */
-router.put('/trips/:id', requireAuth, requireAdmin, updateTrip);
 
-/**
- * @swagger
- * /api/trips/{id}:
- *   delete:
- *     summary: Delete a trip (Admin only)
- *     tags: [Trips]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: The trip ID to delete
- *     responses:
- *       200:
- *         description: Trip deleted successfully
- *       401:
- *         description: Unauthorized - Authentication required
- *       403:
- *         description: Forbidden - Admin access required
- *       404:
- *         description: Trip not found
- */
-router.delete('/trips/:id', requireAuth, requireAdmin, deleteTrip);
 /**
  * @swagger
  * components:
@@ -354,7 +350,7 @@ router.delete('/trips/:id', requireAuth, requireAdmin, deleteTrip);
  *       500:
  *         description: Internal server error
  */
-router.get("/stations", getAllStations);
+router.get('/stations', getAllStations);
 
 /**
  * @swagger
@@ -382,10 +378,6 @@ router.get("/stations", getAllStations);
  *       500:
  *         description: Internal server error
  */
-router.get("/stations/:id", getStationById);
-
-router.get("/users", requireApiLogin, getUsers);
-router.put("/users/:id", requireApiLogin, updateUserById);
-router.delete("/users/:id", requireApiLogin, deleteUserById);
+router.get('/stations/:id', getStationById);
 
 export default router;

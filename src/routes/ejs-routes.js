@@ -10,25 +10,19 @@ import {
   renderTripDetailsPage,
 } from "../controllers/trips.js";
 import { userAdminPage } from "../controllers/users.js";
-import { requirePageLogin, requirePageRole } from "../middleware/auth.js";
+import { requirePageLogin } from "../middleware/auth.js";
 
 const router = Router();
 
-// Trips EJS pages
 router.get("/routes", renderTripListPage);
 router.get("/routes/:routeId", renderTripDetailsPage);
 
-// Booking pages
 router.get("/routes/booking/:scheduleId", bookingPage);
 router.post("/routes/book", processBookingRequest);
 router.get("/routes/bookings/:bookingId", bookingConfirmationPage);
 
-// Bookings admin page
-router.get(
-  "/bookings-admin",
-  requirePageRole("admin"),
-  bookingsAdminPage,
-);
+// Bookings admin page (protected - requires login; the API filters by role)
+router.get("/bookings-admin", requirePageLogin, bookingsAdminPage);
 
 router.get("/login", (req, res) => {
   res.render("login", {
@@ -52,4 +46,5 @@ router.get('/403', (req, res) => {
     user: req.user || req.session?.user 
   });
 });
+
 export default router;
