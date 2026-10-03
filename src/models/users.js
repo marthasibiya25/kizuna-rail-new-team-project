@@ -24,13 +24,6 @@ export async function findUserByEmail(email) {
   return User.findOne({ email: email.trim().toLowerCase() }).populate("role");
 }
 
-export async function getAllUsers() {
-  return User.find()
-    .populate("role")
-    .select("-passwordHash")
-    .sort({ displayName: 1 });
-}
-
 export async function getUserById(userId) {
   return User.findById(userId).populate("role").select("-passwordHash");
 }
