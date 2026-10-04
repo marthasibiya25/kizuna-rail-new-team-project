@@ -24,6 +24,58 @@ export async function findUserByEmail(email) {
   return User.findOne({ email: email.trim().toLowerCase() }).populate("role");
 }
 
+export async function getUserById(userId) {
+  return User.findById(userId).populate("role").select("-passwordHash");
+}
+
+export async function updateUser(userId, userData) {
+  const updateData = {};
+
+  if (typeof userData.displayName === "string") {
+    updateData.displayName = userData.displayName.trim();
+  }
+
+  if (typeof userData.username === "string") {
+    updateData.username = userData.username.trim();
+  }
+
+  if (typeof userData.email === "string") {
+    updateData.email = userData.email.trim().toLowerCase();
+  }
+
+  if (typeof userData.password === "string" && userData.password.trim()) {
+    updateData.passwordHash = await bcrypt.hash(userData.password, 12);
+  }
+
+  if (userData.role) {
+    const role = await Role.findOne({ name: userData.role });
+
+    if (!role) {
+      throw new Error("Invalid role.");
+    }
+
+    updateData.role = role._id;
+  }
+
+  return User.findByIdAndUpdate(userId, updateData, {
+    new: true,
+    runValidators: true,
+  })
+    .populate("role")
+    .select("-passwordHash");
+}
+
+export async function deleteUser(userId) {
+  return User.findByIdAndDelete(userId);
+}
+
 export async function verifyPassword(password, passwordHash) {
   return bcrypt.compare(password, passwordHash);
+}
+
+export async function getAllUsers() {
+  return User.find()
+    .populate("role")
+    .select("displayName username email role")
+    .sort({ displayName: 1 });
 }

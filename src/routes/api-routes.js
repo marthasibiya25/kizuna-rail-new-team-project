@@ -3,13 +3,18 @@ import {
   getPaginatedTicketClasses,
   getTicketClassesForDay,
 } from "../controllers/ticket-classes.js";
-import { getAllBookings } from "../controllers/bookings.js";
+import {
+  getAllBookings,
+  updateBooking,
+  deleteBooking,
+} from "../controllers/bookings.js";
 import { getAllTrips, getTripById } from "../controllers/trips.js";
 import {
   getSchedulesForTrip,
   getSchedulesForTripAndMonth,
 } from "../controllers/schedules.js";
 import { getAllStations, getStationById } from '../controllers/stations.js';
+import { requireApiLogin } from "../middleware/auth.js";
 
 
 const router = Router();
@@ -59,8 +64,9 @@ const router = Router();
  * @swagger
  * /api/bookings:
  *   get:
- *     summary: Get all bookings
+ *     summary: Get bookings visible to the current user
  *     tags: [Bookings]
+ *     description: Admins receive every booking. Standard users receive only bookings where their email matches a passenger.
  *     responses:
  *       200:
  *         description: A list of bookings, newest first.
@@ -70,10 +76,85 @@ const router = Router();
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Booking'
+ *       401:
+ *         description: Not authenticated.
  *       500:
  *         description: Failed to fetch bookings.
  */
-router.get("/bookings", getAllBookings);
+router.get("/bookings", requireApiLogin, getAllBookings);
+
+/**
+ * @swagger
+ * /api/bookings/{id}:
+ *   put:
+ *     summary: Update a booking
+ *     tags: [Bookings]
+ *     description: Standard users may only update bookings where they are a passenger. Admins may update any booking.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The booking's custom string ID (e.g. JR8K2M4XQ)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ticketClass:
+ *                 type: string
+ *               selectedDay:
+ *                 type: string
+ *               passengers:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: Booking updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Booking'
+ *       400:
+ *         description: Invalid booking data.
+ *       401:
+ *         description: Not authenticated.
+ *       403:
+ *         description: Not authorized to update this booking.
+ *       404:
+ *         description: Booking not found.
+ */
+router.put("/bookings/:id", requireApiLogin, updateBooking);
+
+/**
+ * @swagger
+ * /api/bookings/{id}:
+ *   delete:
+ *     summary: Delete a booking
+ *     tags: [Bookings]
+ *     description: Standard users may only delete bookings where they are a passenger. Admins may delete any booking.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The booking's custom string ID (e.g. JR8K2M4XQ)
+ *     responses:
+ *       200:
+ *         description: Booking deleted successfully.
+ *       401:
+ *         description: Not authenticated.
+ *       403:
+ *         description: Not authorized to delete this booking.
+ *       404:
+ *         description: Booking not found.
+ */
+router.delete("/bookings/:id", requireApiLogin, deleteBooking);
 
 /**
  * @swagger
