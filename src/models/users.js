@@ -87,6 +87,7 @@ export async function getPaginatedUsers(page = 1, limit = 10, sort = "username")
       .populate("role")
       .select("displayName username email role")
       .sort({ [sort]: sortFields[sort] })
+      .collation({ locale: "en", strength: 2 })
       .skip(skip)
       .limit(limit)
       .lean(),
