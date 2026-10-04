@@ -20,12 +20,8 @@ export async function createBooking(bookingData) {
   });
 }
 
-export async function getAllBookings() {
-  return Booking.find().sort({ createdAt: -1 });
-}
-
-// Case-insensitive matching for emails (strength 2 ignores case)
-const EMAIL_COLLATION = { locale: "en", strength: 2 };
+// Case-insensitive matching for emails and ticket classes (strength 2 ignores case)
+const TEXT_COLLATION = { locale: "en", strength: 2 };
 
 /**
  * Returns one page of bookings plus the total number of matches.
@@ -33,23 +29,43 @@ const EMAIL_COLLATION = { locale: "en", strength: 2 };
  *
  * @param {Object} options
  * @param {string} [options.email] Only bookings where a passenger has this email
+ * @param {string} [options.ticketClass] Only bookings with this ticket class
+ * @param {Date} [options.from] Only bookings made at or after this moment
+ * @param {Date} [options.to] Only bookings made at or before this moment
  * @param {number} [options.page=1] 1-based page number
  * @param {number} [options.limit=10] Bookings per page
  */
-export async function getBookingsPage({ email, page = 1, limit = 10 } = {}) {
+export async function getBookingsPage({
+  email,
+  ticketClass,
+  from,
+  to,
+  page = 1,
+  limit = 10,
+} = {}) {
   const query = {};
 
   if (email) {
     query["passengers.email"] = email.trim();
   }
 
+  if (ticketClass) {
+    query.ticketClass = ticketClass.trim();
+  }
+
+  if (from || to) {
+    query.createdAt = {};
+    if (from) query.createdAt.$gte = from;
+    if (to) query.createdAt.$lte = to;
+  }
+
   const [items, total] = await Promise.all([
     Booking.find(query)
-      .collation(EMAIL_COLLATION)
+      .collation(TEXT_COLLATION)
       .sort({ createdAt: -1, _id: -1 }) // _id breaks ties so pages never overlap
       .skip((page - 1) * limit)
       .limit(limit),
-    Booking.countDocuments(query).collation(EMAIL_COLLATION),
+    Booking.countDocuments(query).collation(TEXT_COLLATION),
   ]);
 
   return { items, total };

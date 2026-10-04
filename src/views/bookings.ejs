@@ -8,6 +8,30 @@
     </div>
 
     <section class="bookings-admin">
+        <form id="bookings-filter" class="bookings-filter" aria-label="Filter bookings">
+            <div class="filter-field">
+                <label for="filter-ticket-class">Ticket class</label>
+                <select id="filter-ticket-class" name="ticketClass">
+                    <option value="">All classes</option>
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label for="filter-from">Booked from</label>
+                <input type="date" id="filter-from" name="from">
+            </div>
+
+            <div class="filter-field">
+                <label for="filter-to">Booked to</label>
+                <input type="date" id="filter-to" name="to">
+            </div>
+
+            <div class="filter-actions">
+                <button type="submit">Apply filters</button>
+                <button type="button" id="filter-clear">Clear</button>
+            </div>
+        </form>
+
         <p id="bookings-status" class="bookings-status" aria-live="polite">Loading bookings...</p>
 
         <div class="bookings-table-wrapper">
@@ -66,6 +90,15 @@
         border-bottom: 1px solid rgba(128, 128, 128, 0.3);
     }
     .booking-actions button { margin-right: 0.5rem; }
+    .bookings-filter {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .filter-field { display: flex; flex-direction: column; gap: 0.25rem; }
+    .filter-actions { display: flex; gap: 0.5rem; }
     .bookings-pagination {
         display: flex;
         align-items: center;
