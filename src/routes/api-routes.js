@@ -14,7 +14,12 @@ import {
   getSchedulesForTripAndMonth,
 } from "../controllers/schedules.js";
 import { getAllStations, getStationById } from '../controllers/stations.js';
-import { requireApiLogin } from "../middleware/auth.js";
+import {
+  getUsers,
+  updateUserById,
+  deleteUserById,
+} from "../controllers/users.js";
+import { requireApiLogin, requireApiRole } from "../middleware/auth.js";
 
 
 const router = Router();
@@ -379,5 +384,93 @@ router.get('/stations', getAllStations);
  *         description: Internal server error
  */
 router.get('/stations/:id', getStationById);
+
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get paginated users
+ *     description: Returns a paginated list of users for administrators.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number to retrieve.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         description: Number of users to return per page.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 10
+ *       - in: query
+ *         name: sort
+ *         required: false
+ *         description: Field used to sort the user list.
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - username
+ *             - displayName
+ *             - email
+ *           default: username
+ *     responses:
+ *       200:
+ *         description: Paginated users retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       displayName:
+ *                         type: string
+ *                       username:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       role:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                 metadata:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     totalItems:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     sort:
+ *                       type: string
+ *       400:
+ *         description: Invalid pagination or sorting parameters.
+ *       401:
+ *         description: Not authenticated.
+ *       403:
+ *         description: Administrator access required.
+ *       500:
+ *         description: Failed to fetch users.
+ */
+router.get("/users", requireApiRole("admin"), getUsers);
+router.put("/users/:id", requireApiLogin, updateUserById);
+router.delete("/users/:id", requireApiLogin, deleteUserById);
+
 
 export default router;

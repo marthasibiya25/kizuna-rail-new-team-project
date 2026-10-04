@@ -10,7 +10,7 @@ import {
   renderTripDetailsPage,
 } from "../controllers/trips.js";
 import { userAdminPage } from "../controllers/users.js";
-import { requirePageLogin } from "../middleware/auth.js";
+import { requirePageLogin, requirePageRole } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -38,7 +38,7 @@ router.get("/user/dashboard", requirePageLogin, (req, res) => {
 });
 
 // User admin page
-router.get("/user-admin", requirePageLogin, userAdminPage);
+router.get("/users", requirePageRole("admin"), userAdminPage);
 
 router.get('/403', (req, res) => {
   res.status(403).render('errors/403', { 
