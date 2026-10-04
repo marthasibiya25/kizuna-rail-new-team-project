@@ -24,6 +24,37 @@ export async function getAllBookings() {
   return Booking.find().sort({ createdAt: -1 });
 }
 
+// Case-insensitive matching for emails (strength 2 ignores case)
+const EMAIL_COLLATION = { locale: "en", strength: 2 };
+
+/**
+ * Returns one page of bookings plus the total number of matches.
+ * Sorted by booking date (createdAt), newest first.
+ *
+ * @param {Object} options
+ * @param {string} [options.email] Only bookings where a passenger has this email
+ * @param {number} [options.page=1] 1-based page number
+ * @param {number} [options.limit=10] Bookings per page
+ */
+export async function getBookingsPage({ email, page = 1, limit = 10 } = {}) {
+  const query = {};
+
+  if (email) {
+    query["passengers.email"] = email.trim();
+  }
+
+  const [items, total] = await Promise.all([
+    Booking.find(query)
+      .collation(EMAIL_COLLATION)
+      .sort({ createdAt: -1, _id: -1 }) // _id breaks ties so pages never overlap
+      .skip((page - 1) * limit)
+      .limit(limit),
+    Booking.countDocuments(query).collation(EMAIL_COLLATION),
+  ]);
+
+  return { items, total };
+}
+
 export async function getBookingById(bookingId) {
   return Booking.findOne({ id: bookingId });
 }
