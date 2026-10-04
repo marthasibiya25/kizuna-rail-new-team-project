@@ -1,5 +1,4 @@
 import { getScheduleById } from "../models/model.js";
-import { getAllTicketClasses } from "../models/ticket-classes.js";
 
 import {
   createBooking as saveBooking,
@@ -21,20 +20,10 @@ export async function bookingPage(req, res, next) {
       return next(err);
     }
 
-    const ticketClasses = await getAllTicketClasses();
-
-    const ticketOptions = ticketClasses.map((ticketClass) => ({
-      class: ticketClass.class,
-      name: ticketClass.name,
-      price: ticketClass.pricePerKm,
-      amenities: ticketClass.amenities,
-      description: ticketClass.description,
-    }));
-
-    return res.render("bookings/booking", {
+    return res.render("bookings/bookings", {
       title: "Book Trip",
       schedule,
-      ticketOptions,
+
     });
   } catch (error) {
     console.error("Error loading booking page:", error);

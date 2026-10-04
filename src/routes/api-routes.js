@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  getAllTicketClasses,
+  getPaginatedTicketClasses,
   getTicketClassesForDay,
 } from "../controllers/ticket-classes.js";
 import { getAllBookings } from "../controllers/bookings.js";
@@ -79,11 +79,30 @@ router.get("/bookings", getAllBookings);
  * @swagger
  * /api/ticket-classes:
  *   get:
- *     summary: Get ticket classes
- *     description: Returns all ticket classes or filters them by day.
+ *     summary: Get paginated ticket classes
+ *     description: Returns ticket classes with pagination, or filters them by day.
  *     tags:
  *       - Ticket Classes
  *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number. Must be a positive integer.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *           example: 1
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         description: Number of ticket classes per page. Must be between 1 and 10.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 10
+ *           default: 10
+ *           example: 10
  *       - in: query
  *         name: day
  *         required: false
@@ -101,19 +120,45 @@ router.get("/bookings", getAllBookings);
  *           example: monday
  *     responses:
  *       200:
- *         description: Ticket classes retrieved successfully.
+ *         description: Paginated ticket classes retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   description: Ticket classes for the requested page.
+ *                   items:
+ *                     type: object
+ *                 metadata:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       example: 3
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 1
  *       400:
- *         description: Invalid day.
+ *         description: Invalid page, limit, or day.
  *       500:
  *         description: Server error.
  */
+
 router.get("/ticket-classes", async (req, res, next) => {
   try {
     if (req.query.day) {
       return await getTicketClassesForDay(req, res);
     }
 
-    return await getAllTicketClasses(req, res);
+    return await getPaginatedTicketClasses(req, res);
   } catch (error) {
     next(error);
   }
