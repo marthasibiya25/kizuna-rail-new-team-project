@@ -3,19 +3,24 @@ import {
   getAllTicketClasses,
   getTicketClassesForDay,
 } from "../controllers/ticket-classes.js";
-import { getAllBookings, getMyBookings } from "../controllers/bookings.js";
-import { requireApiLogin } from "../middleware/auth.js";
+import {
+  getAllBookings,
+  updateBooking,
+  deleteBooking,
+} from "../controllers/bookings.js";
 import { getAllTrips, getTripById } from "../controllers/trips.js";
 import {
   getSchedulesForTrip,
   getSchedulesForTripAndMonth,
 } from "../controllers/schedules.js";
-import { getAllStations, getStationById } from "../controllers/stations.js";
+import { getAllStations, getStationById } from '../controllers/stations.js';
 import {
   getUsers,
   updateUserById,
   deleteUserById,
 } from "../controllers/users.js";
+
+import { requireApiLogin, requireApiRole } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -64,8 +69,9 @@ const router = Router();
  * @swagger
  * /api/bookings:
  *   get:
- *     summary: Get all bookings
+ *     summary: Get bookings visible to the current user
  *     tags: [Bookings]
+ *     description: Admins receive every booking. Standard users receive only bookings where their email matches a passenger.
  *     responses:
  *       200:
  *         description: A list of bookings, newest first.
@@ -75,11 +81,85 @@ const router = Router();
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Booking'
+ *       401:
+ *         description: Not authenticated.
  *       500:
  *         description: Failed to fetch bookings.
  */
-router.get("/bookings", getAllBookings);
-router.get("/bookings/me", requireApiLogin, getMyBookings);
+router.get("/bookings", requireApiLogin, getAllBookings);
+
+/**
+ * @swagger
+ * /api/bookings/{id}:
+ *   put:
+ *     summary: Update a booking
+ *     tags: [Bookings]
+ *     description: Standard users may only update bookings where they are a passenger. Admins may update any booking.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The booking's custom string ID (e.g. JR8K2M4XQ)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ticketClass:
+ *                 type: string
+ *               selectedDay:
+ *                 type: string
+ *               passengers:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: Booking updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Booking'
+ *       400:
+ *         description: Invalid booking data.
+ *       401:
+ *         description: Not authenticated.
+ *       403:
+ *         description: Not authorized to update this booking.
+ *       404:
+ *         description: Booking not found.
+ */
+router.put("/bookings/:id", requireApiLogin, updateBooking);
+
+/**
+ * @swagger
+ * /api/bookings/{id}:
+ *   delete:
+ *     summary: Delete a booking
+ *     tags: [Bookings]
+ *     description: Standard users may only delete bookings where they are a passenger. Admins may delete any booking.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The booking's custom string ID (e.g. JR8K2M4XQ)
+ *     responses:
+ *       200:
+ *         description: Booking deleted successfully.
+ *       401:
+ *         description: Not authenticated.
+ *       403:
+ *         description: Not authorized to delete this booking.
+ *       404:
+ *         description: Booking not found.
+ */
+router.delete("/bookings/:id", requireApiLogin, deleteBooking);
 
 /**
  * @swagger
@@ -275,7 +355,7 @@ router.get("/trips/:id/schedules", (req, res, next) => {
  *       500:
  *         description: Internal server error
  */
-router.get("/stations", getAllStations);
+router.get('/stations', getAllStations);
 
 /**
  * @swagger
@@ -303,9 +383,92 @@ router.get("/stations", getAllStations);
  *       500:
  *         description: Internal server error
  */
-router.get("/stations/:id", getStationById);
+router.get('/stations/:id', getStationById);
 
-router.get("/users", requireApiLogin, getUsers);
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get paginated users
+ *     description: Returns a paginated list of users for administrators.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number to retrieve.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         description: Number of users to return per page.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 10
+ *       - in: query
+ *         name: sort
+ *         required: false
+ *         description: Field used to sort the user list.
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - username
+ *             - displayName
+ *             - email
+ *           default: username
+ *     responses:
+ *       200:
+ *         description: Paginated users retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       displayName:
+ *                         type: string
+ *                       username:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       role:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                 metadata:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     totalItems:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     sort:
+ *                       type: string
+ *       400:
+ *         description: Invalid pagination or sorting parameters.
+ *       401:
+ *         description: Not authenticated.
+ *       403:
+ *         description: Administrator access required.
+ *       500:
+ *         description: Failed to fetch users.
+ */
+router.get("/users", requireApiRole("admin"), getUsers);
 router.put("/users/:id", requireApiLogin, updateUserById);
 router.delete("/users/:id", requireApiLogin, deleteUserById);
 

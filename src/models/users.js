@@ -134,3 +134,31 @@ export async function deleteUser(userId) {
 export async function verifyPassword(password, passwordHash) {
   return bcrypt.compare(password, passwordHash);
 }
+
+export async function getPaginatedUsers(page = 1, limit = 10, sort = "username") {
+  const sortFields = {
+    username: 1,
+    displayName: 1,
+    email: 1,
+  };
+
+  const skip = (page - 1) * limit;
+
+  const [users, totalItems] = await Promise.all([
+    User.find()
+      .populate("role")
+      .select("displayName username email role")
+      .sort({ [sort]: sortFields[sort] })
+      .collation({ locale: "en", strength: 2 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+
+    User.countDocuments(),
+  ]);
+
+  return {
+    users,
+    totalItems,
+  };
+}
