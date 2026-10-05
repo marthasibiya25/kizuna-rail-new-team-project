@@ -16,7 +16,6 @@ import {
   updateUserById,
   deleteUserById,
 } from "../controllers/users.js";
-import { requireApiLogin } from "../middleware/auth.js";
 
 const router = Router();
 
