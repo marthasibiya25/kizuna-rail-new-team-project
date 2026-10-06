@@ -71,7 +71,7 @@ const router = Router();
  *   get:
  *     summary: Get a page of bookings visible to the current user
  *     tags: [Bookings]
- *     description: Admins page through every booking. Standard users page through bookings where their email matches a passenger. Sorted by booking date, newest first. Optional filters: ticket class and booking date range.
+ *     description: "Admins page through every booking. Standard users page through bookings where their email matches a passenger. Sorted by booking date, newest first. Optional filters include ticket class and booking date range."
  *     parameters:
  *       - in: query
  *         name: page
