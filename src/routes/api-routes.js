@@ -71,7 +71,7 @@ const router = Router();
  *   get:
  *     summary: Get a page of bookings visible to the current user
  *     tags: [Bookings]
- *     description: Admins page through every booking. Standard users page through bookings where their email matches a passenger. Sorted by booking date, newest first.
+ *     description: Admins page through every booking. Standard users page through bookings where their email matches a passenger. Sorted by booking date, newest first. Optional filters: ticket class and booking date range.
  *     parameters:
  *       - in: query
  *         name: page
@@ -88,6 +88,21 @@ const router = Router();
  *           maximum: 50
  *           default: 10
  *         description: Bookings per page
+ *       - in: query
+ *         name: ticketClass
+ *         schema:
+ *           type: string
+ *         description: Only bookings with this ticket class (case-insensitive)
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *         description: Only bookings made on or after this date (YYYY-MM-DD or ISO date-time)
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *         description: Only bookings made on or before this date (YYYY-MM-DD or ISO date-time)
  *     responses:
  *       200:
  *         description: One page of bookings.
@@ -108,6 +123,8 @@ const router = Router();
  *                   type: integer
  *                 totalPages:
  *                   type: integer
+ *       400:
+ *         description: Invalid date, or "from" is after "to".
  *       401:
  *         description: Not authenticated.
  *       500:
