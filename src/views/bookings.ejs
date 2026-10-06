@@ -3,7 +3,7 @@
     <div class="route-header">
         <div class="route-header-content">
             <h1 class="route-name"><%= title %></h1>
-            <p class="route-description">Every booking received, newest first.</p>
+            <p class="route-description">Bookings, newest first, 10 per page.</p>
         </div>
     </div>
 
@@ -28,6 +28,12 @@
                 <tbody id="bookings-list"></tbody>
             </table>
         </div>
+
+        <nav class="bookings-pagination" aria-label="Bookings pagination">
+            <button type="button" id="page-prev" disabled>Previous</button>
+            <span id="page-info" aria-live="polite">Page 1 of 1</span>
+            <button type="button" id="page-next" disabled>Next</button>
+        </nav>
     </section>
 </article>
 
@@ -60,6 +66,14 @@
         border-bottom: 1px solid rgba(128, 128, 128, 0.3);
     }
     .booking-actions button { margin-right: 0.5rem; }
+    .bookings-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .bookings-pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
 
 <script src="/js/admin-bookings.js" defer></script>

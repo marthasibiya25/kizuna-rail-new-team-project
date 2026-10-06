@@ -3,12 +3,22 @@ import { getAllTicketClasses } from "../models/ticket-classes.js";
 
 import {
   createBooking as saveBooking,
-  getAllBookings as findAllBookings,
+  getBookingsPage as findBookingsPage,
   getBookingById as findBookingById,
   updateBookingById,
   deleteBookingById,
   getBookingsByPassengerEmail as findBookingsByPassengerEmail,
 } from "../models/bookings.js";
+
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 50;
+
+// Turns a query-string value into a positive integer, or the fallback if it isn't one.
+function toPositiveInt(value, fallback, max = Infinity) {
+  const number = Number.parseInt(value, 10);
+  if (!Number.isInteger(number) || number < 1) return fallback;
+  return Math.min(number, max);
+}
 
 // EJS controllers
 
@@ -94,13 +104,27 @@ function isOwnerOrAdmin(user, booking) {
 
 // API controllers
 
+// GET /api/bookings?page=1&limit=10
+// Admins page through every booking; standard users page through their own.
 export async function getAllBookings(req, res) {
   try {
     const user = req.user;
-    const bookings = await findAllBookings();
-    const visibleBookings = bookings.filter((booking) => isOwnerOrAdmin(user, booking));
+    const page = toPositiveInt(req.query.page, 1);
+    const limit = toPositiveInt(req.query.limit, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
 
-    return res.status(200).json(visibleBookings);
+    const { items, total } = await findBookingsPage({
+      email: user.role === "admin" ? undefined : user.email,
+      page,
+      limit,
+    });
+
+    return res.status(200).json({
+      bookings: items,
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    });
   } catch (error) {
     console.error("Error fetching bookings:", error);
     return res.status(500).json({ error: "Failed to fetch bookings" });

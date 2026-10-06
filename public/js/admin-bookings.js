@@ -1,6 +1,15 @@
+const PAGE_SIZE = 10;
+
 const statusMessage = document.querySelector('#bookings-status');
 const bookingList = document.querySelector('#bookings-list');
 const bookingRowTemplate = document.querySelector('#booking-row-template');
+const prevButton = document.querySelector('#page-prev');
+const nextButton = document.querySelector('#page-next');
+const pageInfo = document.querySelector('#page-info');
+
+// Start on the page named in the URL (?page=3), or page 1
+let currentPage = Number.parseInt(new URLSearchParams(window.location.search).get('page'), 10) || 1;
+if (currentPage < 1) currentPage = 1;
 
 // Redirect to login if the session expired while the page was open
 const redirectIfUnauthorized = (response) => {
@@ -16,10 +25,11 @@ const readErrorMessage = async (response, fallback) => {
     return data.message || data.error || fallback;
 };
 
-const fetchBookings = async () => {
-    const response = await fetch('/api/bookings', { credentials: 'same-origin' });
+const fetchBookings = async (page) => {
+    const params = new URLSearchParams({ page, limit: PAGE_SIZE });
+    const response = await fetch(`/api/bookings?${params}`, { credentials: 'same-origin' });
 
-    if (redirectIfUnauthorized(response)) return [];
+    if (redirectIfUnauthorized(response)) return null;
     if (!response.ok) {
         throw new Error(await readErrorMessage(response, 'Unable to load bookings.'));
     }
@@ -86,8 +96,7 @@ const renderBookings = (bookings) => {
                     selectedDay: newDay,
                 });
                 if (!result) return;
-                statusMessage.textContent = 'Booking updated.';
-                await loadBookings();
+                await loadBookings(currentPage);
             } catch (error) {
                 statusMessage.textContent = error.message;
             }
@@ -99,8 +108,7 @@ const renderBookings = (bookings) => {
             try {
                 const result = await deleteBookingRequest(booking.id);
                 if (!result) return;
-                statusMessage.textContent = 'Booking deleted.';
-                await loadBookings();
+                await loadBookings(currentPage);
             } catch (error) {
                 statusMessage.textContent = error.message;
             }
@@ -112,19 +120,46 @@ const renderBookings = (bookings) => {
     bookingList.replaceChildren(fragment);
 };
 
-const loadBookings = async () => {
+const renderPagination = ({ page, totalPages, total, limit }) => {
+    prevButton.disabled = page <= 1;
+    nextButton.disabled = page >= totalPages;
+    pageInfo.textContent = `Page ${page} of ${totalPages}`;
+
+    if (total === 0) {
+        statusMessage.textContent = 'No bookings yet, or none match your account.';
+        return;
+    }
+
+    const first = (page - 1) * limit + 1;
+    const last = Math.min(page * limit, total);
+    statusMessage.textContent = `Showing ${first}-${last} of ${total} booking${total === 1 ? '' : 's'}.`;
+};
+
+const loadBookings = async (page = currentPage) => {
     statusMessage.textContent = 'Loading bookings...';
 
     try {
-        const bookings = await fetchBookings();
-        renderBookings(bookings);
-        statusMessage.textContent = bookings.length === 0
-            ? 'No bookings yet, or none match your account.'
-            : `Showing ${bookings.length} booking${bookings.length === 1 ? '' : 's'}.`;
+        const data = await fetchBookings(page);
+        if (!data) return; // redirected to login
+
+        // The last item on the last page was deleted: step back to the new last page
+        if (data.bookings.length === 0 && data.total > 0 && page > data.totalPages) {
+            return loadBookings(data.totalPages);
+        }
+
+        currentPage = data.page;
+        renderBookings(data.bookings);
+        renderPagination(data);
+        window.history.replaceState(null, '', `?page=${currentPage}`);
     } catch (error) {
         bookingList.replaceChildren();
+        prevButton.disabled = true;
+        nextButton.disabled = true;
         statusMessage.textContent = 'Bookings could not be loaded. Refresh the page to try again.';
     }
 };
 
-loadBookings();
+prevButton.addEventListener('click', () => loadBookings(currentPage - 1));
+nextButton.addEventListener('click', () => loadBookings(currentPage + 1));
+
+loadBookings(currentPage);

@@ -69,18 +69,45 @@ const router = Router();
  * @swagger
  * /api/bookings:
  *   get:
- *     summary: Get bookings visible to the current user
+ *     summary: Get a page of bookings visible to the current user
  *     tags: [Bookings]
- *     description: Admins receive every booking. Standard users receive only bookings where their email matches a passenger.
+ *     description: Admins page through every booking. Standard users page through bookings where their email matches a passenger. Sorted by booking date, newest first.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: 1-based page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Bookings per page
  *     responses:
  *       200:
- *         description: A list of bookings, newest first.
+ *         description: One page of bookings.
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Booking'
+ *               type: object
+ *               properties:
+ *                 bookings:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Booking'
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 total:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
  *       401:
  *         description: Not authenticated.
  *       500:
