@@ -14,7 +14,12 @@ import {
   getSchedulesForTripAndMonth,
 } from "../controllers/schedules.js";
 import { getAllStations, getStationById } from '../controllers/stations.js';
-import { requireApiLogin } from "../middleware/auth.js";
+import {
+  getUsers,
+  updateUserById,
+  deleteUserById,
+} from "../controllers/users.js";
+import { requireApiLogin, requireApiRole } from "../middleware/auth.js";
 
 
 const router = Router();
@@ -64,18 +69,62 @@ const router = Router();
  * @swagger
  * /api/bookings:
  *   get:
- *     summary: Get bookings visible to the current user
+ *     summary: Get a page of bookings visible to the current user
  *     tags: [Bookings]
- *     description: Admins receive every booking. Standard users receive only bookings where their email matches a passenger.
+ *     description: Admins page through every booking. Standard users page through bookings where their email matches a passenger. Sorted by booking date, newest first. Optional filters: ticket class and booking date range.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: 1-based page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Bookings per page
+ *       - in: query
+ *         name: ticketClass
+ *         schema:
+ *           type: string
+ *         description: Only bookings with this ticket class (case-insensitive)
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *         description: Only bookings made on or after this date (YYYY-MM-DD or ISO date-time)
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *         description: Only bookings made on or before this date (YYYY-MM-DD or ISO date-time)
  *     responses:
  *       200:
- *         description: A list of bookings, newest first.
+ *         description: One page of bookings.
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Booking'
+ *               type: object
+ *               properties:
+ *                 bookings:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Booking'
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 total:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *       400:
+ *         description: Invalid date, or "from" is after "to".
  *       401:
  *         description: Not authenticated.
  *       500:
@@ -249,18 +298,64 @@ router.get("/ticket-classes", async (req, res, next) => {
  * @swagger
  * /api/trips:
  *   get:
- *     summary: Get all trips
+ *     summary: Get a paginated list of trips
  *     tags:
  *       - Trips
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Positive page number. Defaults to 1.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
  *     responses:
  *       200:
- *         description: A list of trips
+ *         description: A page containing up to 10 trips.
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
+ *               type: object
+ *               required:
+ *                 - results
+ *                 - meta
+ *               properties:
+ *                 results:
+ *                   type: array
+ *                   maxItems: 10
+ *                   items:
+ *                     type: object
+ *                 meta:
+ *                   type: object
+ *                   required:
+ *                     - page
+ *                     - perPage
+ *                     - totalItems
+ *                     - totalPages
+ *                     - hasNextPage
+ *                     - hasPreviousPage
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     perPage:
+ *                       type: integer
+ *                       example: 10
+ *                     totalItems:
+ *                       type: integer
+ *                       example: 11
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 2
+ *                     hasNextPage:
+ *                       type: boolean
+ *                       example: true
+ *                     hasPreviousPage:
+ *                       type: boolean
+ *                       example: false
+ *       400:
+ *         description: The page parameter is not a positive integer.
  *       500:
  *         description: Failed to fetch trips
  */
@@ -424,5 +519,93 @@ router.get('/stations', getAllStations);
  *         description: Internal server error
  */
 router.get('/stations/:id', getStationById);
+
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get paginated users
+ *     description: Returns a paginated list of users for administrators.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number to retrieve.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         description: Number of users to return per page.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 10
+ *       - in: query
+ *         name: sort
+ *         required: false
+ *         description: Field used to sort the user list.
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - username
+ *             - displayName
+ *             - email
+ *           default: username
+ *     responses:
+ *       200:
+ *         description: Paginated users retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       displayName:
+ *                         type: string
+ *                       username:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       role:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                 metadata:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     totalItems:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     sort:
+ *                       type: string
+ *       400:
+ *         description: Invalid pagination or sorting parameters.
+ *       401:
+ *         description: Not authenticated.
+ *       403:
+ *         description: Administrator access required.
+ *       500:
+ *         description: Failed to fetch users.
+ */
+router.get("/users", requireApiRole("admin"), getUsers);
+router.put("/users/:id", requireApiLogin, updateUserById);
+router.delete("/users/:id", requireApiLogin, deleteUserById);
+
 
 export default router;
