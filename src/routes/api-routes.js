@@ -389,8 +389,8 @@ router.get('/stations/:id', getStationById);
  * @swagger
  * /api/users:
  *   get:
- *     summary: Get paginated users
- *     description: Returns a paginated list of users for administrators.
+ *     summary: Get paginated users with optional filtering and keyword search
+ *     description: Returns a paginated list of users for administrators. Users can be filtered by role and searched by display name, username, or email address.
  *     tags: [Users]
  *     parameters:
  *       - in: query
@@ -420,6 +420,22 @@ router.get('/stations/:id', getStationById);
  *             - displayName
  *             - email
  *           default: username
+ *       - in: query
+ *         name: role
+ *         required: false
+ *         description: Filter users by role.
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - admin
+ *             - customer
+ *       - in: query
+ *         name: keyword
+ *         required: false
+ *         description: Search display names, usernames, and email addresses.
+ *         schema:
+ *           type: string
+ *           maxLength: 100
  *     responses:
  *       200:
  *         description: Paginated users retrieved successfully.
@@ -459,8 +475,14 @@ router.get('/stations/:id', getStationById);
  *                       type: integer
  *                     sort:
  *                       type: string
+ *                     role:
+ *                       type: string
+ *                       nullable: true
+ *                     keyword:
+ *                       type: string
+ *                       nullable: true
  *       400:
- *         description: Invalid pagination or sorting parameters.
+ *         description: Invalid pagination, sorting, role, or keyword parameters.
  *       401:
  *         description: Not authenticated.
  *       403:
