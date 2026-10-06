@@ -1,7 +1,6 @@
 import {
   getAllTicketClasses as findAllTicketClasses,
   getPaginatedTicketClasses as findPaginatedTicketClasses,
-  getTicketClassesForDay as findTicketClassesForDay,
 } from "../models/ticket-classes.js";
 
 const validDays = [
@@ -45,7 +44,42 @@ export async function getPaginatedTicketClasses(req, res) {
       });
     }
 
-    const result = await findPaginatedTicketClasses(page, limit);
+    const search =
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : "";
+
+    if (req.query.search !== undefined && !search) {
+      return res.status(400).json({
+        error: "Search must not be empty",
+      });
+    }
+
+    if (search.length > 50) {
+      return res.status(400).json({
+        error: "Search must be 50 characters or fewer",
+      });
+    }
+
+    let day;
+
+    if (req.query.day !== undefined) {
+      day =
+        typeof req.query.day === "string"
+          ? req.query.day.trim().toLowerCase()
+          : "";
+
+      if (!validDays.includes(day)) {
+        return res.status(400).json({
+          error: "Invalid day",
+        });
+      }
+    }
+
+    const result = await findPaginatedTicketClasses(page, limit, {
+      search,
+      day,
+    });
 
     return res.status(200).json({
       data: result.ticketClasses,
@@ -57,33 +91,10 @@ export async function getPaginatedTicketClasses(req, res) {
       },
     });
   } catch (error) {
-    console.error("Error fetching paginated ticket classes:", error);
+    console.error("Error fetching ticket classes:", error);
 
     return res.status(500).json({
       error: "Failed to fetch ticket classes",
-    });
-  }
-}
-
-export async function getTicketClassesForDay(req, res) {
-  try {
-    const { day } = req.query;
-    const normalizedDay = day?.toLowerCase();
-
-    if (!normalizedDay || !validDays.includes(normalizedDay)) {
-      return res.status(400).json({
-        error: "Invalid day",
-      });
-    }
-
-    const ticketClasses = await findTicketClassesForDay(normalizedDay);
-
-    return res.status(200).json(ticketClasses);
-  } catch (error) {
-    console.error("Error fetching ticket classes for day:", error);
-
-    return res.status(500).json({
-      error: "Failed to fetch ticket classes for day",
     });
   }
 }

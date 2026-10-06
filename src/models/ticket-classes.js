@@ -4,15 +4,43 @@ export async function getAllTicketClasses() {
   return TicketClass.find({}).lean();
 }
 
-export async function getPaginatedTicketClasses(page = 1, limit = 10) {
+export async function getPaginatedTicketClasses(
+  page = 1,
+  limit = 10,
+  { search = "", day = "" } = {}
+) {
   const skip = (page - 1) * limit;
+  const query = {};
+
+  if (search) {
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    query.$or = [
+      {
+        class: {
+          $regex: escapedSearch,
+          $options: "i",
+        },
+      },
+      {
+        name: {
+          $regex: escapedSearch,
+          $options: "i",
+        },
+      },
+    ];
+  }
+
+  if (day) {
+    query.availableDays = day;
+  }
 
   const [ticketClasses, total] = await Promise.all([
-    TicketClass.find({})
+    TicketClass.find(query)
       .skip(skip)
       .limit(limit)
       .lean(),
-    TicketClass.countDocuments({}),
+    TicketClass.countDocuments(query),
   ]);
 
   return {
@@ -22,10 +50,4 @@ export async function getPaginatedTicketClasses(page = 1, limit = 10) {
     limit,
     totalPages: Math.ceil(total / limit),
   };
-}
-
-export async function getTicketClassesForDay(day) {
-  return TicketClass.find({
-    availableDays: day.toLowerCase(),
-  }).lean();
 }
