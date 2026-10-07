@@ -1,9 +1,5 @@
 import TicketClass from "./schemas/ticket-classes.js";
 
-export async function getAllTicketClasses() {
-  return TicketClass.find({}).lean();
-}
-
 export async function getPaginatedTicketClasses(
   page = 1,
   limit = 10,
@@ -37,6 +33,7 @@ export async function getPaginatedTicketClasses(
 
   const [ticketClasses, total] = await Promise.all([
     TicketClass.find(query)
+      .sort({ pricePerKm: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
       .lean(),

@@ -1,5 +1,4 @@
 import {
-  getAllTicketClasses as findAllTicketClasses,
   getPaginatedTicketClasses as findPaginatedTicketClasses,
 } from "../models/ticket-classes.js";
 
@@ -13,32 +12,35 @@ const validDays = [
   "sunday",
 ];
 
-export async function getAllTicketClasses(req, res) {
-  try {
-    const ticketClasses = await findAllTicketClasses();
 
-    return res.status(200).json(ticketClasses);
-  } catch (error) {
-    console.error("Error fetching ticket classes:", error);
-
-    return res.status(500).json({
-      error: "Failed to fetch ticket classes",
-    });
-  }
-}
 
 export async function getPaginatedTicketClasses(req, res) {
   try {
-    const page = Number.parseInt(req.query.page ?? "1", 10);
-    const limit = Number.parseInt(req.query.limit ?? "10", 10);
+    const pageValue = req.query.page ?? "1";
+    const limitValue = req.query.limit ?? "10";
 
-    if (!Number.isInteger(page) || page < 1) {
+    if (
+      typeof pageValue !== "string" ||
+      !/^[1-9]\d*$/.test(pageValue)
+    ) {
       return res.status(400).json({
         error: "Page must be a positive integer",
       });
     }
 
-    if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+    if (
+      typeof limitValue !== "string" ||
+      !/^[1-9]\d*$/.test(limitValue)
+    ) {
+      return res.status(400).json({
+        error: "Limit must be an integer between 1 and 10",
+      });
+    }
+
+    const page = Number(pageValue);
+    const limit = Number(limitValue);
+
+    if (limit > 10) {
       return res.status(400).json({
         error: "Limit must be an integer between 1 and 10",
       });

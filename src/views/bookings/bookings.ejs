@@ -12,6 +12,7 @@
         <input type="hidden" name="scheduleId" value="<%= schedule.id %>">
         <input type="hidden" name="routeId" value="<%= schedule.routeId %>">
 
+        <input type="hidden" name="ticketClass" id="selectedTicketClass">
         <section class="ticket-selection">
             <h2 class="section-title">Select Your Ticket</h2>
 
@@ -187,6 +188,7 @@
     const addPassengerBtn = document.getElementById('addPassenger');
 
     const selectedTicketName = document.getElementById('selectedTicketName');
+    const selectedTicketClassInput = document.getElementById('selectedTicketClass');
     const passengerCountDisplay = document.getElementById('passengerCount');
     const pricePerTicket = document.getElementById('pricePerTicket');
     const totalAmount = document.getElementById('totalAmount');
@@ -348,6 +350,7 @@
 
     let currentTicketPage = 1;
     const ticketPageSize = 10;
+    let selectedTicket = null;
 
     const ticketOptionsContainer =
         document.getElementById('ticketOptions');
@@ -359,8 +362,10 @@
         ticketOptionsContainer.innerHTML = '';
 
         if (!ticketClasses.length) {
-            ticketOptionsContainer.innerHTML =
-                '<p class="ticket-empty">No ticket classes available.</p>';
+            const emptyMessage = document.createElement('p');
+            emptyMessage.className = 'ticket-empty';
+            emptyMessage.textContent = 'No ticket classes available.';
+            ticketOptionsContainer.appendChild(emptyMessage);
             return;
         }
 
@@ -369,51 +374,84 @@
             label.className = 'ticket-card';
             label.setAttribute('data-ticket-class', ticket.class);
 
-            label.innerHTML = `
-                <input
-                    type="radio"
-                    name="ticketClass"
-                    value="${ticket.class}"
-                    data-name="${ticket.name}"
-                    data-price="${ticket.pricePerKm}"
-                    ${index === 1 ? 'checked' : ''}
-                    required
-                >
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'ticketChoice';
+            radio.value = ticket.class;
+            radio.dataset.name = ticket.name;
+            radio.dataset.price = ticket.pricePerKm;
+            radio.checked =
+                selectedTicket === ticket.class ||
+                (!selectedTicket && index === 0);
+            radio.required = true;
 
-                <div class="ticket-card-content">
-                    <div class="ticket-card-header">
-                        <h3>${ticket.name}</h3>
-                        <span class="ticket-price">
-                            &#165;${Number(ticket.pricePerKm).toLocaleString()}
-                        </span>
-                    </div>
+            const cardContent = document.createElement('div');
+            cardContent.className = 'ticket-content';
 
-                    <p class="ticket-description">
-                        ${ticket.description || ''}
-                    </p>
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'ticket-header';
 
-                    ${
-                        ticket.amenities?.length
-                            ? `
-                                <ul class="ticket-amenities">
-                                    ${ticket.amenities
-                                        .map(
-                                            amenity =>
-                                                `<li>${amenity}</li>`
-                                        )
-                                        .join('')}
-                                </ul>
-                            `
-                            : ''
-                    }
-                </div>
-            `;
+            const ticketName = document.createElement('h3');
+            ticketName.className = 'ticket-name';
+            ticketName.textContent = ticket.name;
 
+            const ticketPriceElement = document.createElement('div');
+            ticketPriceElement.className = 'ticket-price';
+
+            const priceSymbol = document.createElement('span');
+            priceSymbol.className = 'price-symbol';
+            priceSymbol.textContent = '\u00A5';
+
+            const priceAmount = document.createElement('span');
+            priceAmount.className = 'price-amount';
+            priceAmount.textContent =
+                Number(ticket.pricePerKm).toLocaleString();
+
+            ticketPriceElement.appendChild(priceSymbol);
+            ticketPriceElement.appendChild(priceAmount);
+
+            cardHeader.appendChild(ticketName);
+            cardHeader.appendChild(ticketPriceElement);
+
+            const ticketDescription = document.createElement('p');
+            ticketDescription.className = 'ticket-description';
+            ticketDescription.textContent = ticket.description || '';
+
+            cardContent.appendChild(cardHeader);
+            cardContent.appendChild(ticketDescription);
+
+            if (ticket.amenities?.length) {
+                const amenitiesList = document.createElement('ul');
+                amenitiesList.className = 'amenities-list';
+
+                ticket.amenities.forEach((amenity) => {
+                    const amenityItem = document.createElement('li');
+                    amenityItem.className = 'amenity-item';
+
+                    const amenityIcon = document.createElement('span');
+                    amenityIcon.className = 'amenity-icon';
+                    amenityIcon.textContent = '\u2713';
+                    amenityIcon.setAttribute('aria-hidden', 'true');
+
+                    const amenityText = document.createElement('span');
+                    amenityText.className = 'amenity-text';
+                    amenityText.textContent = amenity;
+
+                    amenityItem.appendChild(amenityIcon);
+                    amenityItem.appendChild(amenityText);
+                    amenitiesList.appendChild(amenityItem);
+                });
+
+                cardContent.appendChild(amenitiesList);
+            }
+
+            label.appendChild(radio);
+            label.appendChild(cardContent);
             ticketOptionsContainer.appendChild(label);
         });
 
         const selectedRadio = ticketOptionsContainer.querySelector(
-            'input[name="ticketClass"]:checked'
+            'input[name="ticketChoice"]:checked'
         );
 
         if (selectedRadio) {
@@ -421,7 +459,7 @@
         }
 
         ticketOptionsContainer
-            .querySelectorAll('input[name="ticketClass"]')
+            .querySelectorAll('input[name="ticketChoice"]')
             .forEach((radio) => {
                 radio.addEventListener('change', () => {
                     if (!radio.disabled) {
@@ -521,17 +559,16 @@
                 throw new Error('Failed to fetch ticket classes');
             }
 
-            const availableClasses = await response.json();
+            const result = await response.json();
+            const availableClasses = result.data;
 
             const availableClassNames = new Set(
                 availableClasses.map(ticket => ticket.class)
             );
 
             const ticketRadios = document.querySelectorAll(
-                'input[name="ticketClass"]'
+                'input[name="ticketChoice"]'
             );
-
-            let selectedTicketIsAvailable = false;
 
             ticketRadios.forEach((radio) => {
                 const ticketCard = radio.closest('.ticket-card');
@@ -547,24 +584,34 @@
                     );
                 }
 
-                if (isAvailable && radio.checked) {
-                    selectedTicketIsAvailable = true;
-                }
-
                 if (!isAvailable) {
                     radio.checked = false;
                 }
             });
 
-            if (!selectedTicketIsAvailable) {
-                const firstAvailable = [...ticketRadios].find(
-                    radio => !radio.disabled
+            if (
+                selectedTicket &&
+                availableClassNames.has(selectedTicket)
+            ) {
+                const selectedRadio = [...ticketRadios].find(
+                    radio => radio.value === selectedTicket
                 );
 
-                if (firstAvailable) {
-                    firstAvailable.checked = true;
-                    updateSelectedTicket(firstAvailable);
+                if (selectedRadio) {
+                    selectedRadio.checked = true;
                 }
+
+                selectedTicketClassInput.value = selectedTicket;
+                return;
+            }
+
+            const firstAvailable = [...ticketRadios].find(
+                radio => !radio.disabled
+            );
+
+            if (firstAvailable) {
+                firstAvailable.checked = true;
+                updateSelectedTicket(firstAvailable);
             }
         } catch (error) {
             console.error('Error loading ticket classes:', error);
@@ -572,6 +619,8 @@
     };
     const updateSelectedTicket = (radio) => {
         const ticketName = radio.dataset.name;
+        selectedTicket = radio.value;
+        selectedTicketClassInput.value = selectedTicket;
         ticketPrice = Number(radio.dataset.price);
 
         selectedTicketName.textContent = ticketName;
@@ -729,22 +778,6 @@
         event.preventDefault();
         autoFillForm();
     });
-
-    const selectedRadio = document.querySelector(
-        'input[name="ticketClass"]:checked'
-    );
-
-    if (selectedRadio) {
-        updateSelectedTicket(selectedRadio);
-    }
-
-    const selectedDay = document.querySelector(
-        'input[name="selectedDay"]:checked'
-    );
-
-    if (selectedDay) {
-        updateTicketAvailability(selectedDay.value);
-    }
 
     loadTicketClasses(1);
 
