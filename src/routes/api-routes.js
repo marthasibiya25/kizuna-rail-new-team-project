@@ -1,8 +1,6 @@
 import { Router } from "express";
-import {
-  getAllTicketClasses,
-  getTicketClassesForDay,
-} from "../controllers/ticket-classes.js";
+import { getPaginatedTicketClasses } from "../controllers/ticket-classes.js";
+
 import {
   getAllBookings,
   updateBooking,
@@ -13,14 +11,13 @@ import {
   getSchedulesForTrip,
   getSchedulesForTripAndMonth,
 } from "../controllers/schedules.js";
-import { getAllStations, getStationById } from '../controllers/stations.js';
+import { getAllStations, getStationById } from "../controllers/stations.js";
 import {
   getUsers,
   updateUserById,
   deleteUserById,
 } from "../controllers/users.js";
 import { requireApiLogin, requireApiRole } from "../middleware/auth.js";
-
 
 const router = Router();
 
@@ -71,7 +68,7 @@ const router = Router();
  *   get:
  *     summary: Get a page of bookings visible to the current user
  *     tags: [Bookings]
- *     description: Admins page through every booking. Standard users page through bookings where their email matches a passenger. Sorted by booking date, newest first. Optional filters: ticket class and booking date range.
+ *     description: "Admins page through every booking. Standard users page through bookings where their email matches a passenger. Sorted by booking date, newest first. Optional filters include ticket class and booking date range."
  *     parameters:
  *       - in: query
  *         name: page
@@ -209,11 +206,38 @@ router.delete("/bookings/:id", requireApiLogin, deleteBooking);
  * @swagger
  * /api/ticket-classes:
  *   get:
- *     summary: Get ticket classes
- *     description: Returns all ticket classes or filters them by day.
+ *     summary: Get paginated and searchable ticket classes
+ *     description: Returns ticket classes with pagination, optional search, and optional day filtering.
  *     tags:
  *       - Ticket Classes
  *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number. Must be a positive integer.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *           example: 1
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         description: Number of ticket classes per page. Must be between 1 and 10.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 10
+ *           default: 10
+ *           example: 10
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         description: Case-insensitive search by ticket class or name. Partial matches are supported.
+ *         schema:
+ *           type: string
+ *           maxLength: 50
+ *           example: premium
  *       - in: query
  *         name: day
  *         required: false
@@ -231,23 +255,38 @@ router.delete("/bookings/:id", requireApiLogin, deleteBooking);
  *           example: monday
  *     responses:
  *       200:
- *         description: Ticket classes retrieved successfully.
+ *         description: Paginated ticket classes retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   description: Ticket classes matching the search and day filters for the requested page.
+ *                   items:
+ *                     type: object
+ *                 metadata:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       example: 3
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 1
  *       400:
- *         description: Invalid day.
+ *         description: Invalid page, limit, search, or day.
  *       500:
  *         description: Server error.
  */
-router.get("/ticket-classes", async (req, res, next) => {
-  try {
-    if (req.query.day) {
-      return await getTicketClassesForDay(req, res);
-    }
-
-    return await getAllTicketClasses(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
+router.get("/ticket-classes", getPaginatedTicketClasses);
 
 /**
  * @swagger
@@ -515,7 +554,7 @@ router.get("/trips/:id/schedules", (req, res, next) => {
  *         updatedAt:
  *           type: string
  *           format: date-time
- *           description: Timestamp when the record was last updated
+ *           description: Timestamp when the record was updated
  *           example: "2026-03-20T14:22:00.000Z"
  */
 
@@ -537,7 +576,7 @@ router.get("/trips/:id/schedules", (req, res, next) => {
  *       500:
  *         description: Internal server error
  */
-router.get('/stations', getAllStations);
+router.get("/stations", getAllStations);
 
 /**
  * @swagger
@@ -565,7 +604,7 @@ router.get('/stations', getAllStations);
  *       500:
  *         description: Internal server error
  */
-router.get('/stations/:id', getStationById);
+router.get("/stations/:id", getStationById);
 
 /**
  * @swagger
@@ -675,6 +714,5 @@ router.get('/stations/:id', getStationById);
 router.get("/users", requireApiRole("admin"), getUsers);
 router.put("/users/:id", requireApiLogin, updateUserById);
 router.delete("/users/:id", requireApiLogin, deleteUserById);
-
 
 export default router;
