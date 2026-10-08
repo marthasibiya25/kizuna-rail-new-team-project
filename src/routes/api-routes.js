@@ -265,6 +265,25 @@ router.get("/ticket-classes", async (req, res, next) => {
  *           type: integer
  *           minimum: 1
  *           default: 1
+ *       - in: query
+ *         name: region
+ *         required: false
+ *         description: Exact region value from meta.availableFilters.regions.
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: season
+ *         required: false
+ *         description: Exact bestSeason value from meta.availableFilters.seasons.
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         description: Case-insensitive partial match against trip name or description. Blank values are ignored.
+ *         schema:
+ *           type: string
+ *           maxLength: 100
  *     responses:
  *       200:
  *         description: A page containing up to 10 trips.
@@ -281,6 +300,17 @@ router.get("/ticket-classes", async (req, res, next) => {
  *                   maxItems: 10
  *                   items:
  *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       region:
+ *                         type: string
+ *                       bestSeason:
+ *                         type: string
  *                 meta:
  *                   type: object
  *                   required:
@@ -290,6 +320,8 @@ router.get("/ticket-classes", async (req, res, next) => {
  *                     - totalPages
  *                     - hasNextPage
  *                     - hasPreviousPage
+ *                     - filters
+ *                     - availableFilters
  *                   properties:
  *                     page:
  *                       type: integer
@@ -309,8 +341,68 @@ router.get("/ticket-classes", async (req, res, next) => {
  *                     hasPreviousPage:
  *                       type: boolean
  *                       example: false
+ *                     filters:
+ *                       type: object
+ *                       required:
+ *                         - search
+ *                         - region
+ *                         - season
+ *                       properties:
+ *                         search:
+ *                           type: string
+ *                           nullable: true
+ *                           example: alpine
+ *                         region:
+ *                           type: string
+ *                           nullable: true
+ *                           example: central
+ *                         season:
+ *                           type: string
+ *                           nullable: true
+ *                           example: autumn
+ *                     availableFilters:
+ *                       type: object
+ *                       required:
+ *                         - regions
+ *                         - seasons
+ *                       properties:
+ *                         regions:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                           example: [central, kansa, kansai, northern]
+ *                         seasons:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                           example: [autumn, spring, summer, winter]
  *       400:
- *         description: The page parameter is not a positive integer.
+ *         description: The page parameter or one or more filters are invalid.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - error
+ *                 - details
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Invalid trip filters
+ *                 details:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     required:
+ *                       - field
+ *                       - message
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: region
+ *                       message:
+ *                         type: string
+ *                         example: "Unknown region filter: unknown"
  *       500:
  *         description: Failed to fetch trips
  */
