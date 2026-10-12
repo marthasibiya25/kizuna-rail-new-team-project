@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import session from "express-session";
 import { loadSessionUser } from "./src/middleware/auth.js";
@@ -11,13 +12,21 @@ import swaggerSpec from "./swagger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = Path.dirname(__filename);
+
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
 if (!SESSION_SECRET) {
   throw new Error("SESSION_SECRET environment variable is required.");
 }
 
+/**
+ * Setup Express application
+ */
 const app = express();
+
+/**
+ * Configure Express middleware
+ */
 
 app.use((req, res, next) => {
   res.locals.appVersion = pkg.version;
@@ -45,10 +54,28 @@ app.use(
 );
 
 app.use(loadSessionUser);
+
+/**
+ * Global Middleware
+ */
+
 app.use(globalMiddleware);
 
+/**
+ * API Documentation
+ */
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+/**
+ * Routes
+ */
+
 app.use("/", routes);
+
+/**
+ * Error Handling
+ */
 
 app.use((req, res, next) => {
   const err = new Error("Page Not Found");
@@ -56,7 +83,7 @@ app.use((req, res, next) => {
   next(err);
 });
 
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   const status = err.status || 500;
   const template = status === 404 ? "404" : "500";
 

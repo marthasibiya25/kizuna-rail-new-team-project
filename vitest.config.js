@@ -2,8 +2,8 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ["test/ticket-classes-api.test.js"],
-    testTimeout: 30000,
-    hookTimeout: 600000,
+    include: ["test/**/*.vitest.js"],
+    setupFiles: ["./test/setup.js"],
+    hookTimeout: 300000,
   },
 });

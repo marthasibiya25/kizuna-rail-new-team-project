@@ -1,7 +1,7 @@
 import "dotenv/config";
-import dns from "dns";
-import connectDB from "./src/models/db.js";
 import app from "./app.js";
+import connectDB from "./src/models/db.js";
+import dns from "dns";
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -10,14 +10,18 @@ if (process.env.DNS_SERVERS) {
   dns.setServers(servers);
 }
 
-const NODE_ENV = process.env.NODE_ENV?.toLowerCase() || "production";
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV?.toLowerCase() || "production";
+
+/**
+ * Start WebSocket Server in Development Mode
+ */
 
 if (NODE_ENV.includes("dev")) {
   const ws = await import("ws");
 
   try {
-    const wsPort = parseInt(PORT, 10) + 1;
+    const wsPort = parseInt(PORT) + 1;
     const wsServer = new ws.WebSocketServer({ port: wsPort });
 
     wsServer.on("listening", () => {
@@ -31,6 +35,10 @@ if (NODE_ENV.includes("dev")) {
     console.error("Failed to start WebSocket server:", error);
   }
 }
+
+/**
+ * Start Server
+ */
 
 const startServer = async () => {
   try {
