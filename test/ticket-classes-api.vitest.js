@@ -1,13 +1,19 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import mongoose from "mongoose";
+﻿import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import request from "supertest";
-import { MongoMemoryServer } from "mongodb-memory-server";
 import TicketClass from "../src/models/schemas/ticket-classes.js";
-
-process.env.SESSION_SECRET = "ticket-api-test-only-secret";
-
-let mongo;
-let app;
+import {
+  setupTestDatabase,
+  clearTestDatabase,
+  teardownTestDatabase,
+} from "./setup.js";
+import app from "../app.js";
 
 const sampleTicketClasses = [
   {
@@ -37,24 +43,16 @@ const sampleTicketClasses = [
 ];
 
 beforeAll(async () => {
-  mongo = await MongoMemoryServer.create({ binary: { version: "7.0.14" } });
-  await mongoose.connect(mongo.getUri());
-
-  const importedApp = await import("../app.js");
-  app = importedApp.default;
+  await setupTestDatabase();
 });
 
 beforeEach(async () => {
-  await TicketClass.deleteMany({});
+  await clearTestDatabase();
   await TicketClass.insertMany(sampleTicketClasses);
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-
-  if (mongo) {
-    await mongo.stop();
-  }
+  await teardownTestDatabase();
 });
 
 describe("GET /api/ticket-classes", () => {
@@ -72,7 +70,7 @@ describe("GET /api/ticket-classes", () => {
     });
   });
 
-  it("returns the requested page and limit", async () => {
+  it("returns the requested page and limit in stable price order", async () => {
     const response = await request(app)
       .get("/api/ticket-classes?page=2&limit=2")
       .expect(200);
@@ -87,14 +85,25 @@ describe("GET /api/ticket-classes", () => {
     });
   });
 
-  it("searches ticket classes by name", async () => {
+  it("searches by name rather than relying on a description match", async () => {
     const response = await request(app)
-      .get("/api/ticket-classes?search=premium")
+      .get("/api/ticket-classes")
+      .query({ search: "Premium Class" })
+      .expect(200);
+
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].name).toBe("Premium Class");
+    expect(response.body.metadata.total).toBe(1);
+  });
+
+  it("trims and ignores case in search terms", async () => {
+    const response = await request(app)
+      .get("/api/ticket-classes")
+      .query({ search: "  pReMiUm cLaSs  " })
       .expect(200);
 
     expect(response.body.data).toHaveLength(1);
     expect(response.body.data[0].class).toBe("Premium");
-    expect(response.body.metadata.total).toBe(1);
   });
 
   it("filters ticket classes by available weekday", async () => {
@@ -109,7 +118,67 @@ describe("GET /api/ticket-classes", () => {
     expect(response.body.metadata.total).toBe(2);
   });
 
-  it("rejects a non-positive page number", async () => {
+  it("trims and ignores case in weekday filters", async () => {
+    const response = await request(app)
+      .get("/api/ticket-classes")
+      .query({ day: "  TUESDAY  " })
+      .expect(200);
+
+    expect(response.body.data.map((item) => item.class)).toEqual([
+      "Standard",
+      "Premium",
+    ]);
+  });
+
+  it("returns no results for a valid weekday with no matching classes", async () => {
+    const response = await request(app)
+      .get("/api/ticket-classes?day=sunday")
+      .expect(200);
+
+    expect(response.body.data).toEqual([]);
+    expect(response.body.metadata.total).toBe(0);
+    expect(response.body.metadata.totalPages).toBe(0);
+  });
+
+  it("returns no results when the search has no matches", async () => {
+    const response = await request(app)
+      .get("/api/ticket-classes?search=NonexistentClass")
+      .expect(200);
+
+    expect(response.body.data).toEqual([]);
+    expect(response.body.metadata.total).toBe(0);
+  });
+
+  it("combines weekday filtering with pagination", async () => {
+    const response = await request(app)
+      .get("/api/ticket-classes?day=tuesday&page=1&limit=1")
+      .expect(200);
+
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].class).toBe("Standard");
+    expect(response.body.metadata).toEqual({
+      total: 2,
+      page: 1,
+      limit: 1,
+      totalPages: 2,
+    });
+  });
+
+  it("returns an empty page when the requested page is past the end", async () => {
+    const response = await request(app)
+      .get("/api/ticket-classes?page=5&limit=2")
+      .expect(200);
+
+    expect(response.body.data).toEqual([]);
+    expect(response.body.metadata).toEqual({
+      total: 3,
+      page: 5,
+      limit: 2,
+      totalPages: 2,
+    });
+  });
+
+  it("rejects page zero", async () => {
     const response = await request(app)
       .get("/api/ticket-classes?page=0")
       .expect(400);
@@ -117,15 +186,41 @@ describe("GET /api/ticket-classes", () => {
     expect(response.body.error).toBe("Page must be a positive integer");
   });
 
-  it("rejects a limit greater than ten", async () => {
+  it.each(["abc", "-1", "1.5"])(
+    "rejects invalid page value %s",
+    async (page) => {
+      const response = await request(app)
+        .get("/api/ticket-classes")
+        .query({ page })
+        .expect(400);
+
+      expect(response.body.error).toBe(
+        "Page must be a positive integer",
+      );
+    },
+  );
+
+  it("rejects repeated page parameters", async () => {
     const response = await request(app)
-      .get("/api/ticket-classes?limit=11")
+      .get("/api/ticket-classes?page=1&page=2")
       .expect(400);
 
-    expect(response.body.error).toBe(
-      "Limit must be an integer between 1 and 10",
-    );
+    expect(response.body.error).toBe("Page must be a positive integer");
   });
+
+  it.each(["0", "11", "abc", "1.5"])(
+    "rejects invalid limit value %s",
+    async (limit) => {
+      const response = await request(app)
+        .get("/api/ticket-classes")
+        .query({ limit })
+        .expect(400);
+
+      expect(response.body.error).toBe(
+        "Limit must be an integer between 1 and 10",
+      );
+    },
+  );
 
   it("rejects an empty search term", async () => {
     const response = await request(app)
@@ -133,6 +228,25 @@ describe("GET /api/ticket-classes", () => {
       .expect(400);
 
     expect(response.body.error).toBe("Search must not be empty");
+  });
+
+  it("rejects search terms longer than 50 characters", async () => {
+    const response = await request(app)
+      .get("/api/ticket-classes")
+      .query({ search: "x".repeat(51) })
+      .expect(400);
+
+    expect(response.body.error).toBe(
+      "Search must be 50 characters or fewer",
+    );
+  });
+
+  it("rejects an empty weekday filter", async () => {
+    const response = await request(app)
+      .get("/api/ticket-classes?day=%20%20")
+      .expect(400);
+
+    expect(response.body.error).toBe("Invalid day");
   });
 
   it("rejects an invalid weekday", async () => {
